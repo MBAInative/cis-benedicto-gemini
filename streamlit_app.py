@@ -43,6 +43,32 @@ selected_study_name = st.sidebar.selectbox("Seleccionar Estudio:", available_stu
 with st.spinner(f"Cargando datos de {selected_study_name}..."):
     file_path, status_msg = get_study_file(selected_study_name)
     
+    # Official Data (Tezanos - Real History)
+    # This block is likely intended to be within a function like get_study_file or analyze_cis_professional
+    # but for the purpose of this edit, it's placed here as per the user's instruction.
+    # Note: 'study_name' is not defined in this scope, assuming it refers to 'selected_study_name'.
+    if selected_study_name == "Enero 2026 (Actual)":
+        official_data_override = {
+            "PP": 23.0, "PSOE": 31.7, "VOX": 17.7, "SUMAR": 7.2, "PODEMOS": 2.3,
+            "SALF": 2.1, "ERC": 1.5, "JUNTS": 1.2, "EH BILDU": 1.3,
+            "EAJ-PNV": 0.9, "BNG": 0.7, "CC": 0.3, "UPN": 0.1
+        }
+    elif selected_study_name == "Diciembre 2025": # Fuente: CIS 3536 / Prensa
+        official_data_override = {
+            "PSOE": 31.4, "PP": 22.4, "VOX": 17.6, "SUMAR": 7.8, "PODEMOS": 4.1,
+            "SALF": 2.0, "ERC": 1.5, "JUNTS": 1.2, "EH BILDU": 1.3 # Imputed minor if missing
+        }
+    elif selected_study_name == "Noviembre 2025": # Fuente: CIS 3530
+        official_data_override = {
+            "PSOE": 32.6, "PP": 22.4, "VOX": 18.8, "SUMAR": 7.1, "PODEMOS": 4.0,
+            "SALF": 0.6, "ERC": 1.6, "JUNTS": 1.3
+        }
+    elif selected_study_name == "Generales 23J (Realidad)":
+         # Estimacion CIS Pre-electoral 23J (Flash)
+        official_data_override = {'PP': 30.8, 'PSOE': 31.0, 'VOX': 11.8, 'SUMAR': 13.5}
+    else:
+        official_data_override = None # No override
+
     if file_path:
         # Analizar archivo local
         results = analyze_cis_professional(file_path)
@@ -51,6 +77,10 @@ with st.spinner(f"Cargando datos de {selected_study_name}..."):
             benedicto_data = results['benedicto']
             official_data = results['official']
             raw_data = results['raw']
+
+            # Apply override if available
+            if official_data_override:
+                official_data = official_data_override
             
             # Fill missing keys with 0
             all_labels = list(benedicto_data.keys())

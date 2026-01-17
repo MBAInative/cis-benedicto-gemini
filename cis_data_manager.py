@@ -3,12 +3,18 @@ import pandas as pd
 import requests
 
 # Mapping of Month-Year to Study ID (Approximate/Known)
-# In a real app, this would be scraped or defined in a config
+# Mapping of Month-Year to Study ID (Approximate/Known)
+# Source: CIS Barometer Search (2024-2025)
 STUDY_MAP = {
     "Enero 2026": "3540",
-    "Diciembre 2025": "3538", # Hypothetical ID
-    "Noviembre 2025": "3536", # Hypothetical
-    "Generales 23J (Base)": "3415" # Post-electoral 2023
+    "Diciembre 2025": "3536",
+    "Noviembre 2025": "3530", 
+    "Octubre 2025": "3528",
+    "Septiembre 2025": "3524",
+    "Julio 2024": "3468", # Jumping back to 2024 sample
+    "Mayo 2024": "3457",
+    "Abril 2024": "3450",
+    "Generales 23J (Base)": "3415"
 }
 
 DATA_DIR = "data/cis_studies"
