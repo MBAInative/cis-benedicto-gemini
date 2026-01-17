@@ -8,7 +8,7 @@ if sys.stdout.encoding != 'utf-8':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def analyze_cis_professional(file_path):
-    print(f"--- Análisis Benedicto-Gemini PROFESIONAL: Estudio 3540 (Enero 2026) ---", flush=True)
+    print(f"--- Análisis Aldabón-Gemini PROFESIONAL: Estudio 3540 (Enero 2026) ---", flush=True)
     
     try:
         # 1. Cargar Datos del Excel (Descargado directamente del CIS)
@@ -100,7 +100,7 @@ def analyze_cis_professional(file_path):
                 
         print(f"DEBUG: Recuerdo -> {recuerdo_enc}", flush=True)
         
-        # 5. Re-ponderación Benedicto-Gemini
+        # 5. Re-ponderación Aldabón-Gemini
         # NUEVO CALCULO K (Normalizado al Voto Válido)
         # 1. Sumar recuerdo total de partidos válidos (excluye No Votó, NR, NC, etc que no están en voto_real_23 keys)
         sum_recuerdo_validos = sum([recuerdo_enc.get(p, 0) for p in voto_real_23])
@@ -165,7 +165,7 @@ def analyze_cis_professional(file_path):
         # Let's normalize based on the SUM of these parties in Official Estimate to align scales?
         # sum_official = sum([cis_oficial.get(p,0) for p in estim_ajustada])
         # scale_factor = sum_official / total_aj if total_aj > 0 else 1
-        # No, Benedicto method is absolute. Let's just normalize to 100% of "Valid Vote" if we have all parties.
+        # No, Aldabón method is absolute. Let's just normalize to 100% of "Valid Vote" if we have all parties.
         # Since we have "Others"? No, we missed "Others".
         
         # Safer: Just output the raw adjusted number? No, must be %.
@@ -190,7 +190,7 @@ def analyze_cis_professional(file_path):
         with pd.ExcelWriter(output_file) as writer:
             # Resumen Comparativo
             res_comp = pd.DataFrame([
-                {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Benedicto-Gemini': final[p], 'Diferencia': round(final[p]-cis_oficial.get(p,0),1)}
+                {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Aldabón-Gemini': final[p], 'Diferencia': round(final[p]-cis_oficial.get(p,0),1)}
                 for p in ['PP', 'PSOE', 'VOX', 'SUMAR']
             ])
             res_comp.to_excel(writer, sheet_name='Comparativa_Final', index=False)

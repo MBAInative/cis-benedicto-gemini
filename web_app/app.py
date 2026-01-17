@@ -36,6 +36,6 @@ def download_report():
         return "Informe no generado. Ejecute el análisis primero.", 404
 
 if __name__ == '__main__':
-    print(f" * Servidor CIS Benedicto-Gemini iniciado")
+    print(f" * Servidor CIS Aldabón-Gemini iniciado")
     print(f" * Archivo de Datos: {CIS_FILE}")
     app.run(debug=True, port=5000)

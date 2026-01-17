@@ -18,17 +18,17 @@ except ImportError as e:
 
 # Configuración de la página
 st.set_page_config(
-    page_title="CIS Monitor: Benedicto-Gemini",
+    page_title="CIS Monitor: Aldabón-Gemini",
     page_icon="⚖️",
     layout="wide"
 )
 
 # Título y Descripción
-st.title("⚖️ CIS Monitor: Estimación Benedicto-Gemini")
+st.title("⚖️ CIS Monitor: Estimación Aldabón-Gemini")
 st.markdown("""
 **Análisis Rectificado del Barómetro CIS**
 
-Este dashboard compara los datos oficiales del CIS (Tezanos) con la estimación rectificada utilizando el método **Benedicto-Gemini**, 
+Este dashboard compara los datos oficiales del CIS (Tezanos) con la estimación rectificada utilizando el método **Aldabón-Gemini**, 
 que aplica corrección por **Recuerdo de Voto Real** y matrices de transferencia de fidelidad.
 """)
 
@@ -141,7 +141,7 @@ for p in labels:
     if benedicto_data.get(p,0) > 0.5: # Show significant only
         chart_data.append({'Partido': p, 'Estimación (%)': raw_data.get(p,0), 'Método': '1. Voto Directo'})
         chart_data.append({'Partido': p, 'Estimación (%)': official_data.get(p,0), 'Método': '2. Alamino-Tezanos (CIS)'})
-        chart_data.append({'Partido': p, 'Estimación (%)': benedicto_data.get(p,0), 'Método': '3. Benedicto-Gemini'})
+        chart_data.append({'Partido': p, 'Estimación (%)': benedicto_data.get(p,0), 'Método': '3. Aldabón-Gemini'})
 
 df_chart = pd.DataFrame(chart_data)
 
@@ -173,19 +173,19 @@ table_df = pd.DataFrame({
     'Partido': labels,
     'Voto Directo': [raw_data.get(p,0) for p in labels],
     'Alamino-Tezanos': [official_data.get(p,0) for p in labels],
-    'Benedicto-Gemini': [benedicto_data.get(p,0) for p in labels],
+    'Aldabón-Gemini': [benedicto_data.get(p,0) for p in labels],
 })
 # Calculate diff
-table_df['Diferencia (Ben vs CIS)'] = table_df['Benedicto-Gemini'] - table_df['Alamino-Tezanos']
+table_df['Diferencia (Ben vs CIS)'] = table_df['Aldabón-Gemini'] - table_df['Alamino-Tezanos']
 
 st.dataframe(
-    table_df.style.format("{:.1f}%", subset=['Voto Directo', 'Alamino-Tezanos', 'Benedicto-Gemini', 'Diferencia (Ben vs CIS)'])
+    table_df.style.format("{:.1f}%", subset=['Voto Directo', 'Alamino-Tezanos', 'Aldabón-Gemini', 'Diferencia (Ben vs CIS)'])
     .applymap(lambda v: 'color: red' if v < 0 else 'color: green', subset=['Diferencia (Ben vs CIS)'])
 )
 
 # --- METODOLOGÍA ---
 # --- METODOLOGÍA ---
-with st.expander("ℹ️ Metodología Detallada: Alamino-Tezanos vs Benedicto-Gemini", expanded=True):
+with st.expander("ℹ️ Metodología Detallada: Alamino-Tezanos vs Aldabón-Gemini", expanded=True):
     col_a, col_b = st.columns(2)
     
     with col_a:
@@ -203,7 +203,7 @@ with st.expander("ℹ️ Metodología Detallada: Alamino-Tezanos vs Benedicto-Ge
         """)
 
     with col_b:
-        st.markdown("### 🟣 Benedicto-Gemini (Rectificación)")
+        st.markdown("### 🟣 Aldabón-Gemini (Rectificación)")
         st.success("""
         **Modelo de Rectificación por Fidelidad y Recuerdo**
         
@@ -220,6 +220,6 @@ with st.expander("ℹ️ Metodología Detallada: Alamino-Tezanos vs Benedicto-Ge
            - **Trend**: Corrección por momento de campaña y viralidad (SALF).
         """)
     
-    st.caption("Análisis generado por el motor Benedicto-Gemini v2.0 (Multivariable) | Datos base: Estudio CIS 3540")
+    st.caption("Análisis generado por el motor Aldabón-Gemini v2.0 (Multivariable) | Datos base: Estudio CIS 3540")
 
 

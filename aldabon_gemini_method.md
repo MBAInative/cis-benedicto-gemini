@@ -1,6 +1,6 @@
-# Método Benedicto-Gemini: Teoría y Aplicación
+# Método Aldabón-Gemini: Teoría y Aplicación
 
-El método **Benedicto-Gemini** surge como una respuesta técnica a la opacidad y los sesgos observados en el modelo "Alaminos-Tezanos" del Centro de Investigaciones Sociológicas (CIS).
+El método **Aldabón-Gemini** surge como una respuesta técnica a la opacidad y los sesgos observados en el modelo "Alaminos-Tezanos" del Centro de Investigaciones Sociológicas (CIS).
 
 ## 1. El Problema del Método Alaminos-Tezanos
 
@@ -10,7 +10,7 @@ El modelo oficial del CIS se basa en una "lógica difusa" (fuzzy logic) y un fac
 - **Cocina de Intencionalidad**: Utiliza variables subjetivas para "adivinar" el voto de los indecisos.
 - **Sesgo de Ganador**: Tiende a inflar al partido en el gobierno basándose en una supuesta "inercia" que no se valida con datos reales de transferencia.
 
-## 2. La Solución Benedicto-Gemini
+## 2. La Solución Aldabón-Gemini
 
 Nuestro método utiliza una **Post-estratificación por Recuerdo de Voto Real**. 
 
@@ -23,7 +23,7 @@ Nuestro método utiliza una **Post-estratificación por Recuerdo de Voto Real**.
 3. **Distribución de Indecisos**:
    - En lugar de usar "inercia", distribuimos a los indecisos basándose en sus **matrices de transferencia** (si votaron a A en 2023 y ahora dudan, su probabilidad de ir a B se calcula según la fuga detectada en los decididos de A).
 
-## 3. Ventajas de Benedicto-Gemini
+## 3. Ventajas de Aldabón-Gemini
 - **Neutralidad**: No asume comportamientos futuros basados en ideología.
 - **Transparencia**: El script de Python adjunto permite replicar el cálculo con cualquier Barómetro.
 - **Vínculo con la Realidad**: El punto de anclaje siempre es el último resultado electoral verificado (Julio 2023).

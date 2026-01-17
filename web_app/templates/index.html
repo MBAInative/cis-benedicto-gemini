@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CIS Monitor: Estimación Benedicto-Gemini</title>
+    <title>CIS Monitor: Estimación Aldabón-Gemini</title>
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
 
     <div class="dashboard-container">
@@ -25,7 +27,7 @@
                 <li><a href="/report/download"><i class="fa-solid fa-file-excel"></i> Descargar Datos</a></li>
             </ul>
             <div class="footer">
-                <p>Método Benedicto-Gemini</p>
+                <p>Método Aldabón-Gemini</p>
                 <small>v1.0.0</small>
             </div>
         </nav>
@@ -76,17 +78,20 @@
                     <div class="step">
                         <span class="step-num">1</span>
                         <h4>Datos Brutos Sesgados</h4>
-                        <p>El CIS muestra una muestra "cruda" donde el PSOE aparece sobrerrepresentado (47% en modelos lineales) debido al "voto oculto" de la derecha.</p>
+                        <p>El CIS muestra una muestra "cruda" donde el PSOE aparece sobrerrepresentado (47% en modelos
+                            lineales) debido al "voto oculto" de la derecha.</p>
                     </div>
                     <div class="step">
                         <span class="step-num">2</span>
                         <h4>La Cocina de Tezanos</h4>
-                        <p>Para compensar, el CIS aplica una "cocina" opaca que mueve los datos, a veces de forma contraintuitiva, para alinearse con otras encuestas.</p>
+                        <p>Para compensar, el CIS aplica una "cocina" opaca que mueve los datos, a veces de forma
+                            contraintuitiva, para alinearse con otras encuestas.</p>
                     </div>
                     <div class="step">
                         <span class="step-num">3</span>
                         <h4>Nuestra Solución</h4>
-                        <p>Usamos el <strong>Recuerdo de Voto Real (23J)</strong> como ancla matemática inflexible y aplicamos matrices de transferencia de 40dB para distribuir indecisos científicamente.</p>
+                        <p>Usamos el <strong>Recuerdo de Voto Real (23J)</strong> como ancla matemática inflexible y
+                            aplicamos matrices de transferencia de 40dB para distribuir indecisos científicamente.</p>
                     </div>
                 </div>
             </div>
@@ -95,4 +100,5 @@
 
     <script src="/static/js/script.js"></script>
 </body>
+
 </html>
