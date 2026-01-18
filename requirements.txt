@@ -1,4 +1,5 @@
 pandas
 openpyxl
+pypdf
 streamlit
 altair

@@ -40,45 +40,28 @@ available_studies = list_available_studies()
 selected_study_name = st.sidebar.selectbox("Seleccionar Estudio:", available_studies)
 
 # 2. Carga y Análisis Dinámico
+# 2. Carga y Análisis Dinámico
 with st.spinner(f"Cargando datos de {selected_study_name}..."):
-    file_path, status_msg = get_study_file(selected_study_name)
+    # get_study_file returns (path, type_or_status_msg)
+    # If path found -> type is 'AVANCE' or 'BAROMETRO'
+    # If not found -> type is error message
+    path_found, study_type = get_study_file(selected_study_name)
     
-    # Official Data (Tezanos - Real History)
-    # This block is likely intended to be within a function like get_study_file or analyze_cis_professional
-    # but for the purpose of this edit, it's placed here as per the user's instruction.
-    # Note: 'study_name' is not defined in this scope, assuming it refers to 'selected_study_name'.
-    if selected_study_name == "Enero 2026 (Actual)":
-        official_data_override = {
-            "PP": 23.0, "PSOE": 31.7, "VOX": 17.7, "SUMAR": 7.2, "PODEMOS": 2.3,
-            "SALF": 2.1, "ERC": 1.5, "JUNTS": 1.2, "EH BILDU": 1.3,
-            "EAJ-PNV": 0.9, "BNG": 0.7, "CC": 0.3, "UPN": 0.1
-        }
-    elif selected_study_name == "Diciembre 2025": # Fuente: CIS 3536 / Prensa
-        official_data_override = {
-            "PSOE": 31.4, "PP": 22.4, "VOX": 17.6, "SUMAR": 7.8, "PODEMOS": 4.1,
-            "SALF": 2.0, "ERC": 1.5, "JUNTS": 1.2, "EH BILDU": 1.3 # Imputed minor if missing
-        }
-    elif selected_study_name == "Noviembre 2025": # Fuente: CIS 3530
-        official_data_override = {
-            "PSOE": 32.6, "PP": 22.4, "VOX": 18.8, "SUMAR": 7.1, "PODEMOS": 4.0,
-            "SALF": 0.6, "ERC": 1.6, "JUNTS": 1.3
-        }
-    elif selected_study_name == "Generales 23J (Realidad)":
-         # Estimacion CIS Pre-electoral 23J (Flash)
-        official_data_override = {'PP': 30.8, 'PSOE': 31.0, 'VOX': 11.8, 'SUMAR': 13.5}
-    else:
-        official_data_override = None # No override
+    # Clean previous overrides (Use real data from files now)
+    official_data_override = None
+    if selected_study_name == "Generales 23J (Realidad)":
+        official_data_override = {'PP': 33.1, 'PSOE': 31.7, 'VOX': 12.4, 'SUMAR': 12.3}
 
-    if file_path:
-        # Analizar archivo local
-        results = analyze_cis_professional(file_path)
+    if path_found:
+        # Analizar archivo local con el tipo detectado
+        results = analyze_cis_professional(path_found, study_type=study_type)
         
         if results:
             benedicto_data = results['benedicto']
             official_data = results['official']
             raw_data = results['raw']
 
-            # Apply override if available
+            # Apply override only if strictly necessary (e.g. 23J base check)
             if official_data_override:
                 official_data = official_data_override
             
@@ -95,8 +78,8 @@ with st.spinner(f"Cargando datos de {selected_study_name}..."):
             success_load = False
             
     else:
-        # Archivo no encontrado -> Mostrar instrucciones
-        st.warning(f"⚠️ {status_msg}")
+        # Archivo no encontrado -> Mostrar instrucciones (study_type contains msg)
+        st.warning(f"⚠️ {study_type}")
         success_load = False
 
 if not success_load:
@@ -104,11 +87,10 @@ if not success_load:
     st.stop()
 
 
-
 # --- KPIs (Dinámicos) ---
 col1, col2, col3 = st.columns(3)
 with col1:
-    sesgo_psoe = official_data['PSOE'] - benedicto_data['PSOE']
+    sesgo_psoe = official_data.get('PSOE', 0) - benedicto_data.get('PSOE', 0)
     st.metric(
         label="Sesgo Tezanos (PSOE)",
         value=f"{sesgo_psoe:+.1f}%",
@@ -117,7 +99,7 @@ with col1:
     )
 
 with col2:
-    voto_oculto_pp = benedicto_data['PP'] - raw_data['PP']
+    voto_oculto_pp = benedicto_data.get('PP', 0) - raw_data.get('PP', 0)
     st.metric(
         label="Voto Oculto (PP)",
         value=f"{voto_oculto_pp:+.1f}%",
@@ -132,10 +114,9 @@ with col3:
     )
 
 # --- GRÁFICO COMPARATIVO ---
-# --- GRÁFICO COMPARATIVO ---
 st.subheader(f"Estimación {selected_study_name}")
 
-# Crear DataFrame para el gráfico (Sin 40dB)
+# Crear DataFrame para el gráfico
 chart_data = []
 for p in labels:
     if benedicto_data.get(p,0) > 0.5: # Show significant only
@@ -145,9 +126,7 @@ for p in labels:
 
 df_chart = pd.DataFrame(chart_data)
 
-import altair as alt
-
-# Gráfico de barras agrupadas MEJORADO (Estilo Clásico)
+# Gráfico de barras agrupadas MEJORADO
 base = alt.Chart(df_chart).encode(
     x=alt.X('Partido:N', axis=alt.Axis(title=None, labelAngle=-45)),
 )
@@ -183,43 +162,93 @@ st.dataframe(
     .applymap(lambda v: 'color: red' if v < 0 else 'color: green', subset=['Diferencia (Ben vs CIS)'])
 )
 
-# --- METODOLOGÍA ---
-# --- METODOLOGÍA ---
-with st.expander("ℹ️ Metodología Detallada: Alamino-Tezanos vs Aldabón-Gemini", expanded=True):
+# --- GUÍA DIDÁCTICA: COCINA ELECTORAL ---
+st.markdown("---")
+with st.expander("🎓 Guía Didáctica: Desmontando la 'Cocina' Electoral (Nivel Experto)", expanded=True):
+    st.markdown("""
+    ### 🧑‍🍳 ¿Por qué todos los datos del CIS parecen incorrectos?
+    
+    En demoscopia, la "cocina" es el proceso matemático para corregir los errores de la encuesta bruta (gente que miente, gente que no contesta).
+    Aquí explicamos **con total transparencia** por qué el CIS oficial falla y cómo lo arreglamos nosotros.
+    """)
+    
     col_a, col_b = st.columns(2)
     
     with col_a:
-        st.markdown("### 🔵 Alamino-Tezanos (Oficial CIS)")
         st.info("""
-        **Modelo Bifactorial Inercia-Incertidumbre (2019)**
+        #### 1. La Receta Tezanos (Modelo Inercia-Incertidumbre)
+        **Filosofía: "El voto es un estado de ánimo"**
         
-        Es el método oficial implantado por José Félix Tezanos.
+        Tezanos asume que el votante es fluido y que su "norte" es la simpatía actual.
         
-        1. **Base**: Parte de la Intención Directa de Voto + Simpatía.
-        2. **Imputación de Indecisos**: 
-           - **Inercia**: Asume que el votante tiende a repetir su voto anterior.
-           - **Incertidumbre**: Distribuye a los "No sabe" basándose en variables subjetivas como la valoración de líderes o la cercanía ideológica.
-        3. **Sesgo Conocido**: Al asignar indecisos basándose fuertemente en la "simpatía" del momento, tiende a **sobreestimar** a los partidos de izquierda (PSOE) cuando estos tienen alta visibilidad, ignorando el "voto oculto" o vergonzante de la derecha.
+        **🌀 ¿Cómo gestiona a los Indecisos?**
+        Si alguien dice *"No sé"*:
+        1.  **Simpatía Declarada:** Le pregunta *"¿Por qué partido siente más simpatía?"*. Si responde PSOE, le asigna voto al PSOE.
+        2.  **Valoración de Líderes:** Si no tiene simpatía, mira qué líder valora mejor.
+        
+        **❌ El Fallo Fatal: El "Voto Vergonzante"**
+        En España, el votante de derecha (PP/VOX) tiende a ocultar sus intenciones ("Voto Oculto") y a menudo valora mal a sus propios líderes por crítica interna, pero luego les vota por lealtad ideológica.
+        *   **Consecuencia:** Tezanos asigna a casi todos los indecisos a la izquierda (porque es "menos vergonzante" declarar simpatía progresista), inflando artificialmente al PSOE/Sumar en 3-5 puntos.
         """)
 
     with col_b:
-        st.markdown("### 🟣 Aldabón-Gemini (Rectificación)")
         st.success("""
-        **Modelo de Rectificación por Fidelidad y Recuerdo**
+        #### 2. La Receta Aldabón-Gemini (Modelo de Recuerdo)
+        **Filosofía: "El comportamiento pasado predice el futuro"**
         
-        Método correctivo diseñado para neutralizar el sesgo muestral del CIS.
+        Nosotros no nos fiamos de lo que la gente *dice* sentir hoy. Nos fiamos de lo que *hicieron* ayer.
         
-        1. **Corrección de Muestra (Factor $k$)**:
-           - Corrección normalizada por Voto Válido para evitar sesgo de participación.
-           - $$k_p = \\frac{\\% \\text{Voto Real 23J}_p}{\\% \\text{Recuerdo Recalibrado}_p}$$
-        2. **Matrices de Transferencia (Fidelidad)**:
-           - Ajuste fino por partido (PSOE fidelidad reforzada, PP normalizada).
-        3. **Factor Liderazgo/Tendencia (Multivariable)**:
-           - Incorporamos criterios tipo 40dB:
-           - **Bonus Presidencial**: Plus por valoración de líder (PSOE).
-           - **Trend**: Corrección por momento de campaña y viralidad (SALF).
+        **⚖️ Paso 1: El Detector de Sesgos (Factor $k$)**
+        Comparamos la muestra con la realidad de las urnas (23J):
+        *   *Ejemplo:* Si el 40% de los encuestados dice "Yo voté a Pedro Sánchez", pero sabemos que solo le votó el 31,7% real, **bajamos el peso** de cada respuesta socialista (valen 0,79 votos).
+        *   *Ejemplo:* Si solo el 20% admite haber votado a Feijóo (vs 33,1% real), sabemos que hay mucho "voto oculto". **Subimos el peso** de cada respuesta popular (valen 1,65 votos).
+        
+        **🔄 Paso 2: La Matriz de Fugas**
+        Si un votante nos dice "Voté PP en 2023, pero ahora No Sabe", no adivinamos. Aplicamos la estadística de sus compañeros decididos:
+        *   Si el 90% de los antiguos votantes del PP se quedan, asumimos que este indeciso tiene un 90% de probabilidad de volver.
+        
+        **Resultado:** Un "mapa de calor" realista que aflora el voto oculto de la derecha y desinfla la sobre-representación de la izquierda.
         """)
+
+    st.markdown("---")
+    st.caption("**Conclusión:** Mientras Tezanos mide la temperatura emocional (quién cae mejor), Aldabón-Gemini mide la lealtad estructural (quién tiene la base más sólida).")
+
+with st.expander("🛠️ Anexo Técnico: Fórmulas y Algoritmos (White Paper)", expanded=False):
+    st.markdown("""
+    ### 1. Definición de Variables Base
     
-    st.caption("Análisis generado por el motor Aldabón-Gemini v2.0 (Multivariable) | Datos base: Estudio CIS 3540")
+    *   **$V_p$ (Voto Real 23J):** Porcentaje real obtenido por el partido $p$ en las Elecciones Generales de Julio 2023 sobre el censo de voto válido.
+    *   **$R_{raw}$ (Recuerdo Bruto):** Porcentaje de encuestados en el CIS actual que declaran haber votado a $p$ en 2023.
+    *   **$S_p$ (Voto+Simpatía):** Intención directa declarada o simpatía explícita hacia el partido $p$ en la encuesta actual.
+    
+    ### 2. Algoritmo de Rectificación Aldabón-Gemini
+    
+    El modelo aplica una función de transformación lineal sobre la intención directa, calibrada por tres factores.
+    
+    #### A. Normalización del Recuerdo ($R_{norm}$)
+    Primero normalizamos el recuerdo bruto eliminando No contesta / No sabe para operar sobre Voto Válido Equivalente:
+    $$ R_{norm,p} = \\frac{R_{raw,p}}{\\sum_{i \\in Partidos} R_{raw,i}} \\times 100 $$
+    
+    #### B. Cálculo del Factor de Corrección ($K_p$)
+    Este coeficiente mide la sobredimensionamiento (autocomplacencia) o infra-representación (voto oculto) de cada electorado en la muestra.
+    $$ K_p = \\frac{V_p}{R_{norm,p}} $$
+    *   Si $K_p > 1$: Detectamos **Voto Oculto** (ej. PP/VOX suelen tener $K \\approx 1.3 - 1.6$).
+    *   Si $K_p < 1$: Detectamos **Sobrerrepresentación** (ej. PSOE suele tener $K \\approx 0.8 - 0.9$).
+    
+    #### C. Matriz de Ajuste Fino ($\Phi_p$ y $\\Lambda_p$)
+    Aplicamos correcciones de segunda derivada basadas en fidelidad histórica y liderazgo actual.
+    *   **Fidelidad ($\Phi_p$):** Tasa de retención estructural. Penaliza a partidos con alta volatilidad (Sumar/Podemos) y estabiliza el bipartidismo.
+        *   $\\Phi_{PSOE} = 0.93$ | $\\Phi_{PP} = 0.92$ | $\\Phi_{VOX} = 0.82$
+    *   **Liderazgo/Tendencia ($\Lambda_p$):** Factor de momento (Momentum). Corrige la inercia de campaña o viralidad reciente (ej. Alvise/SALF).
+        *   $\\Lambda_{SALF} = 1.20$ (Viralidad) | $\\Lambda_{PSOE} = 0.97$ (Desgaste Gobierno)
+    
+    ### 3. Fórmula Final de Estimación
+    La estimación final $E_p$ se calcula proyectando la intención directa corregida por el sesgo muestral y ajustada por los factores de fidelidad y coyuntura:
+    
+    $$ E_p = S_p \\times K_p \\times \\Phi_p \\times \\Lambda_p $$
+    
+    *Nota: El resultado se re-normaliza finalmente para asegurar que $\\sum E_p = 100\\%$.*
+    """)
+    st.caption("Documentación técnica extraída del código fuente `cis_analyzer.py` v2.1")
 
 

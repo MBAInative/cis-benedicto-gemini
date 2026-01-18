@@ -4,5 +4,5 @@ __pycache__/
 .venv
 venv/
 env/
-data/cis_studies/*.xlsx
-!data/cis_studies/3540_avance.xlsx
+!data/cis_studies/*.xlsx
+!data/cis_studies/*.pdf
