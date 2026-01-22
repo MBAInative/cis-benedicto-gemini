@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(__file__))
 
 # Import modules
 try:
-    from cis_data_manager import list_available_studies, get_study_file
+    from cis_data_manager import list_available_studies, get_study_file, get_study_metadata
     from cis_analyzer import analyze_cis_professional
 except ImportError as e:
     st.error(f"Error importando módulos locales: {e}. Verifique que cis_data_manager.py y cis_analyzer.py están en la carpeta.")
@@ -38,6 +38,10 @@ st.sidebar.header("🗄️ Histórico de Estudios")
 # 1. Selector de Barómetro
 available_studies = list_available_studies()
 selected_study_name = st.sidebar.selectbox("Seleccionar Estudio:", available_studies)
+
+# Mostrar Metadatos en el Sidebar
+metadata = get_study_metadata(selected_study_name)
+st.sidebar.info(f"**Referencia:** {metadata['Elecciones']}\n\n**Sondeo:** {metadata['Sondeo']}")
 
 # 2. Carga y Análisis Dinámico
 # 2. Carga y Análisis Dinámico

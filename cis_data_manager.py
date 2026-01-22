@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import requests
 
 # Mapping of Month-Year to Study ID (Approximate/Known)
 # Mapping of Month-Year to Study ID (Approximate/Known)
@@ -15,7 +14,22 @@ STUDY_MAP = {
     "Septiembre 2025": "3524"
 }
 
+# Metadatos adicionales para cada estudio
+STUDY_METADATA = {
+    "3543": {"Elecciones": "Autonómicas (Aragón)", "Sondeo": "Enero/Febrero 2026"},
+    "3540": {"Elecciones": "Generales", "Sondeo": "Enero 2026"},
+    "3536": {"Elecciones": "Generales", "Sondeo": "Diciembre 2025"},
+    "3530": {"Elecciones": "Generales", "Sondeo": "Noviembre 2025"},
+    "3528": {"Elecciones": "Generales", "Sondeo": "Octubre 2025"},
+    "3524": {"Elecciones": "Generales", "Sondeo": "Septiembre 2025"}
+}
+
 DATA_DIR = "data/cis_studies"
+
+def get_study_metadata(study_name):
+    """Retorna un dict con información del estudio."""
+    study_id = STUDY_MAP.get(study_name)
+    return STUDY_METADATA.get(study_id, {"Elecciones": "Nacional", "Sondeo": "Desconocido"})
 
 def get_study_file(study_name):
     """
