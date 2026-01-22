@@ -7,6 +7,7 @@ import requests
 # Source: CIS Barometer Search (2024-2025)
 # Mapping of Month-Year to Study ID (Strictly these 5)
 STUDY_MAP = {
+    "Febrero 2026": "3543",
     "Enero 2026": "3540",
     "Diciembre 2025": "3536",
     "Noviembre 2025": "3530", 

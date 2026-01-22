@@ -58,9 +58,16 @@ def analyze_cis_professional(file_path, study_type=None):
                              # function returns [Party, Estimación], consistent.
                              break
         
-        # Check for 'Estimación de Voto' in Excel (Fallback or Avance)
-        if df_estim_official is None and 'Estimación de Voto' in xl.sheet_names:
-            df_temp = pd.read_excel(xl, sheet_name='Estimación de Voto')
+        # Check for 'Estimación de Voto' OR 'Estimación' in Excel (Fallback or Avance)
+        estim_sheet_name = None
+        if 'Estimación de Voto' in xl.sheet_names:
+            estim_sheet_name = 'Estimación de Voto'
+        elif 'Estimación' in xl.sheet_names:
+            estim_sheet_name = 'Estimación'
+        
+        if df_estim_official is None and estim_sheet_name is not None:
+            df_temp = pd.read_excel(xl, sheet_name=estim_sheet_name)
+            print(f"DEBUG: Leyendo hoja '{estim_sheet_name}'...", flush=True)
             print(f"DEBUG: 'Estimación de Voto' columns: {len(df_temp.columns)}", flush=True)
             
             # Check for Avance signatures (Voto directo + Estimación)
@@ -80,6 +87,11 @@ def analyze_cis_professional(file_path, study_type=None):
             elif len(df_temp.columns) < 5: 
                 print("DEBUG: Detectada hoja 'Estimación de Voto' simplificada (PDF Enriched).")
                 df_estim_official = df_temp 
+            elif estim_sheet_name == 'Estimación':
+                # Nuevo formato simplificado (3543+): col 0 = partido, col 1 = estimación
+                print("DEBUG: Detectado formato NUEVO SIMPLIFICADO (Hoja 'Estimación').")
+                df_estim_official = df_temp
+                df_estim_avance = df_temp  # Usar mismos datos para voto_simp
             else:
                 # Fallback for legacy "wide" Avance files if any
                 print("DEBUG: Detectada hoja 'Estimación de Voto' compleja (Legacy Avance).")
@@ -118,41 +130,51 @@ def analyze_cis_professional(file_path, study_type=None):
         }
 
         # --- Extract OFFICIAL Estimates ---
+        # Determinar columna de estimación según formato
+        is_new_simple_format = (estim_sheet_name == 'Estimación' and len(df_estim_official.columns) >= 5 if df_estim_official is not None else False)
+        
         if df_estim_official is not None:
-             print(f"DEBUG: Parsing Official Estimates...", flush=True)
-             # If enriched PDF (cols: Partido, Estimación)
-             # If enriched PDF (cols: Partido, Estimación) - usually 2 columns
+             print(f"DEBUG: Parsing Official Estimates (new_format={is_new_simple_format})...", flush=True)
+             # Determinar qué columna usar para el valor
              if len(df_estim_official.columns) <= 2:
-                  for i in range(len(df_estim_official)):
-                       try:
-                            p_raw = str(df_estim_official.iloc[i, 0]).strip()
-                            val_raw = df_estim_official.iloc[i, 1]
-                            
-                            # Normalize Name
-                            p_norm = p_raw.replace('*','').upper()
-                            if p_norm in normalized_names: p_key = normalized_names[p_norm]
-                            elif p_norm in voto_real_23: p_key = p_norm
-                            elif "FIESTA" in p_norm: p_key = 'SALF'
-                            else: p_key = p_norm
-                            
-                            cis_oficial[p_key] = float(val_raw)
-                       except: pass
+                  val_col = 1
+             elif is_new_simple_format:
+                  val_col = 3  # Nuevo formato 3543: col 1 = Voto Directo, col 3 = Estimación CIS
              else:
-                  # Legacy Avance (Col 3 is Estimate)
-                  for i in range(len(df_estim_official)):
-                       try:
-                            p_raw = str(df_estim_official.iloc[i, 0]).strip()
-                            val_raw = df_estim_official.iloc[i, 3] # Col 3 is Official
-                            # Normalize (Simple copy from below)
-                            p_norm = p_raw.replace('*','').upper()
-                            if p_norm in normalized_names: p_key = normalized_names[p_norm]
-                            elif p_norm in voto_real_23: p_key = p_norm
-                            elif "FIESTA" in p_norm: p_key = 'SALF'
-                            else: p_key = p_norm
-                            
-                            if p_key in voto_real_23 or p_key in ['SALF', 'PODEMOS']:
-                                 cis_oficial[p_key] = float(val_raw)
-                       except: pass
+                  val_col = 3  # Legacy Avance: col 3 tiene la estimación
+             
+             # Lista de términos a excluir (no son partidos)
+             exclude_terms = ['NAN', 'ABSTENCIÓN', 'NO SABE', 'NO CONTESTA', 'EN BLANCO', 
+                              'VOTO NULO', 'OTROS PARTIDOS', '(N)', 'TOTAL', 'MARGEN', 
+                              'ESTIMACIÓN', 'VOTO DIRECTO', 'INTERVALO', 'ESCAÑOS']
+             
+             for i in range(len(df_estim_official)):
+                  try:
+                       p_raw = str(df_estim_official.iloc[i, 0]).strip()
+                       val_raw = df_estim_official.iloc[i, val_col]
+                       
+                       # Verificar que es un partido válido (no nan, no excluido, tiene valor numérico)
+                       if pd.isna(val_raw) or p_raw == '' or p_raw.upper() == 'NAN':
+                            continue
+                       
+                       # Normalize Name
+                       p_norm = p_raw.replace('*','').upper().strip()
+                       
+                       # Verificar exclusiones
+                       if any(excl in p_norm for excl in exclude_terms):
+                            continue
+                       
+                       # Normalización de nombres conocidos
+                       if p_norm in normalized_names: p_key = normalized_names[p_norm]
+                       elif "FIESTA" in p_norm or 'SALF' in p_norm: p_key = 'SALF'
+                       elif 'IU-MOVIMIENTO' in p_norm or p_norm == 'IU-MOVIMIENTO SUMAR': p_key = 'SUMAR'
+                       elif 'PODEMOS' in p_norm: p_key = 'PODEMOS'
+                       else: p_key = p_norm
+                       
+                       # Solo guardar el PRIMER valor encontrado (evita que subcircunscripciones sobrescriban el total)
+                       if p_key not in cis_oficial:
+                            cis_oficial[p_key] = float(val_raw)
+                  except: pass
 
         # --- Extract RAW Vote+Simpathy ---
         if df_estim_avance is not None:
@@ -163,13 +185,27 @@ def analyze_cis_professional(file_path, study_type=None):
                        p_raw = str(df_estim_avance.iloc[i, 0]).strip()
                        val_raw = df_estim_avance.iloc[i, 1]
                        
-                       p_norm = p_raw.replace('*','').upper()
+                       # Verificar que es un partido válido
+                       if pd.isna(val_raw) or p_raw == '' or p_raw.upper() == 'NAN':
+                            continue
+                       
+                       p_norm = p_raw.replace('*','').upper().strip()
+                       
+                       # Verificar exclusiones
+                       exclude_terms = ['NAN', 'ABSTENCIÓN', 'NO SABE', 'NO CONTESTA', 'EN BLANCO', 
+                                        'VOTO NULO', 'OTROS PARTIDOS', '(N)', 'TOTAL']
+                       if any(excl in p_norm for excl in exclude_terms):
+                            continue
+                       
+                       # Normalización
                        if p_norm in normalized_names: p_key = normalized_names[p_norm]
-                       elif p_norm in voto_real_23: p_key = p_norm
-                       elif "FIESTA" in p_norm: p_key = 'SALF'
+                       elif "FIESTA" in p_norm or 'SALF' in p_norm: p_key = 'SALF'
+                       elif 'IU-MOVIMIENTO' in p_norm: p_key = 'SUMAR'
+                       elif 'PODEMOS' in p_norm: p_key = 'PODEMOS'
                        else: p_key = p_norm
                        
-                       if p_key in voto_real_23 or p_key in ['SALF', 'PODEMOS']:
+                       # Solo guardar el PRIMER valor encontrado
+                       if p_key not in voto_simp:
                             voto_simp[p_key] = float(val_raw)
                   except: pass
                   
@@ -399,7 +435,7 @@ def analyze_cis_professional(file_path, study_type=None):
         with pd.ExcelWriter(output_file) as writer:
             # Resumen Comparativo
             res_comp = pd.DataFrame([
-                {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Aldabón-Gemini': final[p], 'Diferencia': round(final[p]-cis_oficial.get(p,0),1)}
+                {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Aldabón-Gemini': final.get(p, 0), 'Diferencia': round(final.get(p,0)-cis_oficial.get(p,0),1)}
                 for p in ['PP', 'PSOE', 'VOX', 'SUMAR']
             ])
             res_comp.to_excel(writer, sheet_name='Comparativa_Final', index=False)
