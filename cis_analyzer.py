@@ -429,30 +429,32 @@ def analyze_cis_professional(file_path, study_type=None):
         # FIX: The normalization above inflates if we miss "Others".
         # But we included almost everyone.
         
-        # 6. Generar Excel de Auditoría Completo
-        output_file = 'analisis_auditado_3540_v2.xlsx'
-        print(f"DEBUG: Escribiendo a {output_file}...", flush=True)
-        with pd.ExcelWriter(output_file) as writer:
-            # Resumen Comparativo
-            res_comp = pd.DataFrame([
-                {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Aldabón-Gemini': final.get(p, 0), 'Diferencia': round(final.get(p,0)-cis_oficial.get(p,0),1)}
-                for p in ['PP', 'PSOE', 'VOX', 'SUMAR']
-            ])
-            res_comp.to_excel(writer, sheet_name='Comparativa_Final', index=False)
-            
-            # Detalle Técnico
-            detalle = pd.DataFrame([
-                {
-                    'Partido': p, 
-                    'Real_2023': voto_real_23.get(p, 0), 
-                    'Recuerdo_CIS': recuerdo_enc.get(p, 0), 
-                    'K_Ponderacion': round(k.get(p, 1), 3),
-                    'Voto_Simpatia_CIS': voto_simp.get(p, 0),
-                    'Ajuste_Fidelidad': ajuste_fidelidad.get(p, 1),
-                    'Final_%': final.get(p, 0)
-                } for p in voto_real_23
-            ])
-            detalle.to_excel(writer, sheet_name='Detalle_Calculos', index=False)
+        # 6. Generar Excel de Auditoría Completo (Opcional/Debug)
+        try:
+            output_file = 'analisis_auditado_debug.xlsx'
+            with pd.ExcelWriter(output_file) as writer:
+                # Resumen Comparativo
+                res_comp = pd.DataFrame([
+                    {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Aldabón-Gemini': final.get(p, 0), 'Diferencia': round(final.get(p,0)-cis_oficial.get(p,0),1)}
+                    for p in ['PP', 'PSOE', 'VOX', 'SUMAR']
+                ])
+                res_comp.to_excel(writer, sheet_name='Comparativa_Final', index=False)
+                
+                # Detalle Técnico
+                detalle = pd.DataFrame([
+                    {
+                        'Partido': p, 
+                        'Real_2023': voto_real_23.get(p, 0), 
+                        'Recuerdo_CIS': recuerdo_enc.get(p, 0), 
+                        'K_Ponderacion': round(k.get(p, 1), 3),
+                        'Voto_Simpatia_CIS': voto_simp.get(p, 0),
+                        'Ajuste_Fidelidad': ajuste_fidelidad.get(p, 1),
+                        'Final_%': final.get(p, 0)
+                    } for p in voto_real_23
+                ])
+                detalle.to_excel(writer, sheet_name='Detalle_Calculos', index=False)
+        except Exception as e:
+            print(f"INFO: No se pudo generar el Excel de auditoría (normal en Streamlit Cloud): {e}", flush=True)
 
         # Return data for integration
         return {
