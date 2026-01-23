@@ -47,7 +47,10 @@ def get_study_file(study_name):
     baro_names = [f"{study_id}-multi.xlsx", f"{study_id}_multi.xlsx"]
 
     if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
+        try:
+            os.makedirs(DATA_DIR)
+        except Exception:
+            pass # Ignorar si no hay permisos (normal en Cloud si el dir ya debería estar en Git)
         
     # Check Avance
     path = os.path.join(DATA_DIR, avance_name)

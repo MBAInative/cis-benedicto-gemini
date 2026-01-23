@@ -1,11 +1,5 @@
 import pandas as pd
 import sys
-
-# Windows console encoding fix
-if sys.stdout.encoding != 'utf-8':
-    import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-
 import os
 try:
     from cis_pdf_processor import extract_official_data_from_pdf
@@ -466,13 +460,8 @@ def analyze_cis_professional(file_path, study_type=None):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        print(f"Error Crítico: {e}", flush=True)
+        print(f"Error Crítico en analyze_cis_professional: {e}", flush=True)
         return None
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"Error Crítico: {e}", flush=True)
 
 if __name__ == "__main__":
     analyze_cis_professional('3540_avance.xlsx')
