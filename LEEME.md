@@ -29,15 +29,27 @@ El modelo aplica una rectificación profesional basada en el comportamiento elec
 
 ---
 
-## 🏛️ Soporte de Estudios Autonómicos (Nuevo)
+## 🏛️ Soporte de Estudios Autonómicos y Metadatos
 
-El sistema ha sido actualizado para manejar la complejidad de los estudios preelectorales regionales (Ej: **Aragón 3543**):
+El sistema maneja la complejidad de los estudios regionales e incluye metadatos detallados para cada sondeo:
 
-*   **Detección de Partidos Regionales:** Identifica y extrae automáticamente partidos como CHA, TERUEL EXISTE o PAR.
-*   **Tratamiento Diferenciado:** 
-    *   Partidos Nacionales: Mantienen su Factor K histórico.
-    *   Partidos Regionales: Se analiza su fuerza directa con ajustes de fidelidad local.
-*   **Normalización Inteligente:** Agrupa coaliciones (Ej: IU-MOVIMIENTO SUMAR -> SUMAR) para comparativas coherentes.
+*   **Identificación Automática:** Extrae partidos regionales (CHA, PAR, TERUEL EXISTE) y normaliza coaliciones.
+*   **Tratamiento de Datos:** Prioriza tablas agregadas (Total CCAA) sobre desgloses provinciales.
+*   **Panel de Información:** El panel lateral muestra ahora datos críticos de la ficha técnica:
+    *   **Referencia Electoral:** (Generales / Autonómicas).
+    *   **Muestra (N):** Tamaño de la muestra (ej: 3.313 entrevistas).
+    *   **Trabajo de Campo:** Fechas exactas del sondeo.
+
+---
+
+## 🛠️ Notas de Estabilidad y Despliegue (Cloud)
+
+Para asegurar el funcionamiento en **Streamlit Cloud (Debian/Linux)**, se han implementado las siguientes mejoras de robustez:
+
+1.  **Compatibilidad de Encoding:** Eliminados hacks de consola dependientes de Windows que bloqueaban el arranque en Linux.
+2.  **Gestión de Permisos:** La creación de directorios temporales y archivos de auditoría está protegida para entornos con sistemas de archivos de solo lectura.
+3.  **Depuración de Dependencias:** `requirements.txt` optimizado con versiones específicas y librerías necesarias para el renderizado de tablas (`jinja2`).
+4.  **Blindaje de Arranque:** Sistema de diagnóstico integrado que captura y muestra errores de importación detallados en lugar de fallos genéricos.
 
 ---
 
@@ -47,4 +59,4 @@ El sistema ha sido actualizado para manejar la complejidad de los estudios preel
 *   **Datos:** Los estudios deben colocarse en `data/cis_studies/` siguiendo la nomenclatura `ID-multi_A.xlsx`.
 
 ---
-*Documento actualizado: 22 de Enero de 2026*
+*Documento actualizado: 23 de Enero de 2026*

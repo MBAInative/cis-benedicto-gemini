@@ -5,30 +5,15 @@ import altair as alt
 import sys
 import os
 
-# Add project root to path for imports
-root_path = os.path.dirname(__file__)
-if root_path not in sys.path:
-    sys.path.append(root_path)
-
-print(f"DIAGNOSTIC: App starting... Python version: {sys.version}", flush=True)
-print(f"DIAGNOSTIC: Current directory: {os.getcwd()}", flush=True)
-
 # Import modules with enhanced error reporting
 try:
-    print("DIAGNOSTIC: Loading cis_data_manager...", flush=True)
-    import cis_data_manager
-    print("DIAGNOSTIC: Loading cis_analyzer...", flush=True)
-    import cis_analyzer
-    
     from cis_data_manager import list_available_studies, get_study_file, get_study_metadata
     from cis_analyzer import analyze_cis_professional
-    print("DIAGNOSTIC: All modules loaded successfully", flush=True)
 except Exception as e:
     import traceback
     error_details = traceback.format_exc()
     st.error(f"FATAL ERROR during startup: {e}")
     st.code(error_details)
-    print(f"DIAGNOSTIC: FATAL ERROR during startup: {error_details}", flush=True)
     st.stop()
 
 # Configuración de la página
@@ -56,7 +41,14 @@ selected_study_name = st.sidebar.selectbox("Seleccionar Estudio:", available_stu
 
 # Mostrar Metadatos en el Sidebar
 metadata = get_study_metadata(selected_study_name)
-st.sidebar.info(f"**Referencia:** {metadata['Elecciones']}\n\n**Sondeo:** {metadata['Sondeo']}")
+st.sidebar.markdown("---")
+st.sidebar.write(f"**📍 Referencia:** {metadata.get('Elecciones', 'N/A')}")
+st.sidebar.write(f"**🗓️ Sondeo:** {metadata.get('Sondeo', 'N/A')}")
+if 'N' in metadata:
+    st.sidebar.write(f"**👥 Muestra:** {metadata['N']}")
+if 'Campo' in metadata:
+    st.sidebar.write(f"**⏱️ Trabajo de campo:** {metadata['Campo']}")
+st.sidebar.markdown("---")
 
 # 2. Carga y Análisis Dinámico
 # 2. Carga y Análisis Dinámico
