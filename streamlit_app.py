@@ -6,14 +6,29 @@ import sys
 import os
 
 # Add project root to path for imports
-sys.path.append(os.path.dirname(__file__))
+root_path = os.path.dirname(__file__)
+if root_path not in sys.path:
+    sys.path.append(root_path)
 
-# Import modules
+print(f"DIAGNOSTIC: App starting... Python version: {sys.version}", flush=True)
+print(f"DIAGNOSTIC: Current directory: {os.getcwd()}", flush=True)
+
+# Import modules with enhanced error reporting
 try:
+    print("DIAGNOSTIC: Loading cis_data_manager...", flush=True)
+    import cis_data_manager
+    print("DIAGNOSTIC: Loading cis_analyzer...", flush=True)
+    import cis_analyzer
+    
     from cis_data_manager import list_available_studies, get_study_file, get_study_metadata
     from cis_analyzer import analyze_cis_professional
-except ImportError as e:
-    st.error(f"Error importando módulos locales: {e}. Verifique que cis_data_manager.py y cis_analyzer.py están en la carpeta.")
+    print("DIAGNOSTIC: All modules loaded successfully", flush=True)
+except Exception as e:
+    import traceback
+    error_details = traceback.format_exc()
+    st.error(f"FATAL ERROR during startup: {e}")
+    st.code(error_details)
+    print(f"DIAGNOSTIC: FATAL ERROR during startup: {error_details}", flush=True)
     st.stop()
 
 # Configuración de la página

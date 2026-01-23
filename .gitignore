@@ -4,5 +4,12 @@ __pycache__/
 .venv
 venv/
 env/
+*.xlsx
+*.pdf
+# Excepciones para que se suban los estudios
 !data/cis_studies/*.xlsx
 !data/cis_studies/*.pdf
+# No subir archivos de debug/salida
+analisis_auditado_*.xlsx
+excel_debug.txt
+output_test.txt
