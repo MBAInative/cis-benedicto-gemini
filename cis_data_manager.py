@@ -8,6 +8,7 @@ import pandas as pd
 STUDY_MAP = {
     "Febrero 2026": "3543",
     "Enero 2026": "3540",
+    "Extremadura (Dic 2025)": "3538",
     "Diciembre 2025": "3536",
     "Noviembre 2025": "3530", 
     "Octubre 2025": "3528",
