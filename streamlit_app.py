@@ -1,265 +1,267 @@
-
 import streamlit as st
 import pandas as pd
 import altair as alt
-import sys
 import os
+import tempfile
 
-# Import modules with enhanced error reporting
+# Import new class-based module
 try:
-    from cis_data_manager import list_available_studies, get_study_file, get_study_metadata
-    from cis_analyzer import analyze_cis_professional
+    from cis_estudios import crear_estudio, AvanceGenerales, AvanceAutonomicas, BarometroNacional
 except Exception as e:
-    import traceback
-    error_details = traceback.format_exc()
-    st.error(f"FATAL ERROR during startup: {e}")
-    st.code(error_details)
+    st.error(f"Error importing cis_estudios: {e}")
     st.stop()
 
 # Configuración de la página
 st.set_page_config(
-    page_title="CIS Monitor: Aldabón-Gemini",
+    page_title="CIS Monitor: Comparativa de Métodos",
     page_icon="⚖️",
     layout="wide"
 )
 
 # Título y Descripción
-st.title("⚖️ CIS Monitor: Estimación Aldabón-Gemini")
+st.title("⚖️ CIS Monitor: Comparativa de Métodos de Cocina Electoral")
 st.markdown("""
-**Análisis Rectificado del Barómetro CIS**
-
-Este dashboard compara los datos oficiales del CIS (Tezanos) con la estimación rectificada utilizando el método **Aldabón-Gemini**, 
-que aplica corrección por **Recuerdo de Voto Real** y matrices de transferencia de fidelidad.
+- **Voto Directo**: Intención de voto espontánea (incluye indecisos y abstención cruda)
+- **Estimación CIS**: Método Alamino-Tezanos (oficial del CIS sobre voto válido)
+- **Aldabón-Gemini**: Factor K (Recuerdo) + Ajustes de Fidelidad Histórica
+- **Aldabón-Claude**: Factor K Puro (Corrección por sesgo de memoria sin aditivos)
 """)
 
-# --- CONFIGURACIÓN Y SELECTOR ---
-st.sidebar.header("🗄️ Histórico de Estudios")
+# --- SIDEBAR: SELECTOR Y SUBIDA ---
+st.sidebar.header("🗄️ Estudios Disponibles")
 
-# 1. Selector de Barómetro
-available_studies = list_available_studies()
-selected_study_name = st.sidebar.selectbox("Seleccionar Estudio:", available_studies)
+# Listar estudios existentes (filtrar archivos temporales ~$)
+DATA_DIR = "data/cis_studies"
+if os.path.exists(DATA_DIR):
+    existing_files = [f for f in os.listdir(DATA_DIR) 
+                      if f.endswith('.xlsx') and not f.startswith('~$')]
+else:
+    existing_files = []
 
-# Mostrar Metadatos en el Sidebar
-metadata = get_study_metadata(selected_study_name)
+# Selector de estudio existente
+if existing_files:
+    selected_file = st.sidebar.selectbox("Seleccionar Estudio:", sorted(existing_files, reverse=True))
+    file_path = os.path.join(DATA_DIR, selected_file)
+else:
+    st.sidebar.warning("No hay estudios disponibles")
+    file_path = None
+
 st.sidebar.markdown("---")
-st.sidebar.write(f"**📍 Referencia:** {metadata.get('Elecciones', 'N/A')}")
-st.sidebar.write(f"**🗓️ Sondeo:** {metadata.get('Sondeo', 'N/A')}")
-if 'N' in metadata:
-    st.sidebar.write(f"**👥 Muestra:** {metadata['N']}")
-if 'Campo' in metadata:
-    st.sidebar.write(f"**⏱️ Trabajo de campo:** {metadata['Campo']}")
-st.sidebar.markdown("---")
 
-# 2. Carga y Análisis Dinámico
-# 2. Carga y Análisis Dinámico
-with st.spinner(f"Cargando datos de {selected_study_name}..."):
-    # get_study_file returns (path, type_or_status_msg)
-    # If path found -> type is 'AVANCE' or 'BAROMETRO'
-    # If not found -> type is error message
-    path_found, study_type = get_study_file(selected_study_name)
+# Subida de nuevo estudio
+st.sidebar.header("📤 Subir Nuevo Estudio")
+uploaded_file = st.sidebar.file_uploader("Subir Excel del CIS:", type=['xlsx'])
+uploaded_pdf = st.sidebar.file_uploader("Subir PDF de Estimación (opcional):", type=['pdf'])
+
+if uploaded_file:
+    # Guardar archivo subido temporalmente
+    os.makedirs(DATA_DIR, exist_ok=True)
+    new_file_path = os.path.join(DATA_DIR, uploaded_file.name)
+    with open(new_file_path, 'wb') as f:
+        f.write(uploaded_file.getbuffer())
     
-    # Clean previous overrides (Use real data from files now)
-    official_data_override = None
-    if selected_study_name == "Generales 23J (Realidad)":
-        official_data_override = {'PP': 33.1, 'PSOE': 31.7, 'VOX': 12.4, 'SUMAR': 12.3}
+    if uploaded_pdf:
+        pdf_path = os.path.join(DATA_DIR, uploaded_pdf.name)
+        with open(pdf_path, 'wb') as f:
+            f.write(uploaded_pdf.getbuffer())
+    
+    st.sidebar.success(f"✅ Archivo guardado: {uploaded_file.name}")
+    file_path = new_file_path
 
-    if path_found:
-        # Analizar archivo local con el tipo detectado
-        results = analyze_cis_professional(path_found, study_type=study_type)
+st.sidebar.markdown("---")
+
+# --- ANÁLISIS Y VISUALIZACIÓN ---
+if file_path and os.path.exists(file_path):
+    try:
+        estudio = crear_estudio(file_path)
         
-        if results:
-            benedicto_data = results['benedicto']
-            official_data = results['official']
-            raw_data = results['raw']
+        # Mostrar ficha técnica
+        ficha = estudio.extraer_ficha_tecnica()
+        st.sidebar.subheader("📋 Ficha Técnica")
+        st.sidebar.write(f"**Tipo:** {ficha.get('tipo', 'N/A')}")
+        st.sidebar.write(f"**Referencia:** {ficha.get('referencia', 'N/A')}")
+        st.sidebar.write(f"**Muestra (N):** {ficha.get('n', 'N/A')}")
+        st.sidebar.write(f"**Trabajo de campo:** {ficha.get('campo', 'N/A')}")
+        st.sidebar.write(f"**Ámbito:** {ficha.get('ambito', 'N/A')}")
 
-            # Apply override only if strictly necessary (e.g. 23J base check)
-            if official_data_override:
-                official_data = official_data_override
+        st.sidebar.write(f"**Hoja RV:** {estudio.get_hoja_rv()}")
+        
+        # Extraer datos
+        voto_directo = estudio.extraer_voto_directo()
+        estimacion_cis = estudio.extraer_estimacion_cis()
+        aldabon_gemini = estudio.calcular_aldabon_gemini()
+        aldabon_claude = estudio.calcular_aldabon_claude()
+        
+        # Determinar partidos a mostrar
+        all_parties = set()
+        for d in [voto_directo, estimacion_cis, aldabon_gemini, aldabon_claude]:
+            all_parties.update(d.keys())
+        
+        # Filtrar partidos con valores > 0.5%
+        # Partidos principales (excluyendo categorías técnicas para el orden base)
+        main_parties = sorted([p for p in all_parties 
+                         if any(d.get(p, 0) > 0.5 for d in [voto_directo, estimacion_cis, aldabon_gemini, aldabon_claude])
+                         and p not in ['No Sabe', 'No Contesta', 'Abstención', 'En Blanco', 'Voto Nulo']],
+                        key=lambda x: -voto_directo.get(x, 0))
+        
+        # Categorías de voto técnico que SÍ queremos estimar
+        voto_tecnico = ['En Blanco', 'Voto Nulo']
+        
+        # Categorías de no-voto (para Voto Directo crudo)
+        non_vote_cats = ['No Sabe', 'No Contesta', 'Abstención'] + voto_tecnico
+        parties = main_parties + [c for c in non_vote_cats if voto_directo.get(c, 0) > 0]
+        
+        # Categorías a mostrar en columnas de estimación (Partidos + Blanco/Nulo)
+        cats_estimacion = main_parties + voto_tecnico
+        
+        if parties:
+            # --- TABLA COMPARATIVA ---
+            st.subheader("📊 Tabla Comparativa de Métodos")
             
-            # Fill missing keys with 0
-            all_labels = list(benedicto_data.keys())
-            for d in [benedicto_data, official_data, raw_data]:
-                for l in all_labels:
-                    if l not in d: d[l] = 0.0
+            table_data = {
+                'Categoría': parties,
+                'Voto Directo (Crudo)': [voto_directo.get(p, 0) for p in parties],
+                'Estimación CIS': [estimacion_cis.get(p, 0) if p in cats_estimacion else 0 for p in parties],
+                'Aldabón-Gemini': [aldabon_gemini.get(p, 0) if p in cats_estimacion else 0 for p in parties],
+                'Aldabón-Claude': [aldabon_claude.get(p, 0) if p in cats_estimacion else 0 for p in parties],
+            }
             
-            labels = all_labels
-            success_load = True
+            df = pd.DataFrame(table_data)
+            # Diferencia real: (Aldabón-Gemini - Estimación CIS)
+            # Solo si la Estimación CIS es > 0, sino mostrar Aldabón-Gemini
+            df['Diff (Gemini - CIS)'] = df.apply(
+                lambda row: row['Aldabón-Gemini'] - row['Estimación CIS'] if row['Estimación CIS'] > 0 else 0, 
+                axis=1
+            )
+            
+            # Formatear tabla
+            st.dataframe(
+                df.style.format({
+                    'Voto Directo (Crudo)': '{:.1f}%',
+                    'Estimación CIS': '{:.1f}%',
+                    'Aldabón-Gemini': '{:.1f}%',
+                    'Aldabón-Claude': '{:.1f}%',
+                    'Diff (Gemini - CIS)': '{:+.1f}%'
+                }).applymap(
+                    lambda v: 'color: green' if v > 0 else 'color: red' if v < 0 else '',
+                    subset=['Diff (Gemini - CIS)']
+                ),
+                use_container_width=True
+            )
+            
+            # --- GRÁFICO DE BARRAS ---
+            st.subheader("📈 Comparativa Visual")
+            
+            # Preparar datos para gráfico
+            chart_data = []
+            for p in parties[:10]:  # Top 10 partidos
+                chart_data.append({'Partido': p, 'Método': 'Voto Directo', 'Valor': voto_directo.get(p, 0)})
+                chart_data.append({'Partido': p, 'Método': 'Estimación CIS', 'Valor': estimacion_cis.get(p, 0)})
+                chart_data.append({'Partido': p, 'Método': 'Aldabón-Gemini', 'Valor': aldabon_gemini.get(p, 0)})
+                chart_data.append({'Partido': p, 'Método': 'Aldabón-Claude', 'Valor': aldabon_claude.get(p, 0)})
+            
+            chart_df = pd.DataFrame(chart_data)
+            
+            chart = alt.Chart(chart_df).mark_bar().encode(
+                x=alt.X('Partido:N', sort=parties[:10]),
+                y=alt.Y('Valor:Q', title='Estimación (%)'),
+                color=alt.Color('Método:N', legend=alt.Legend(orient='top')),
+                xOffset='Método:N',
+                tooltip=['Partido', 'Método', alt.Tooltip('Valor:Q', format='.1f')]
+            ).properties(height=400)
+            
+            st.altair_chart(chart, use_container_width=True)
+            
+            # --- EXPLICACIÓN DE MÉTODOS ---
+            with st.expander("🎓 Explicación de los Métodos (Aldabón-Gemini 2.6)"):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("""
+                    ### Método Alamino-Tezanos (CIS)
+                    - Usa **Lógica Difusa**: Asigna indecisos según simpatía o cercanía.
+                    - **Efecto Inercia**: El recuerdo histórico pesa mucho más que la intención directa.
+                    - Suele favorecer ligeramente a los partidos de la coalición de gobierno.
+                    """)
+                    
+                    st.markdown("""
+                    ### Método Aldabón-Gemini (v2.6)
+                    - **Inference Engine**: Detecta automáticamente ruralidad y polarización del estudio.
+                    - **Recall Bias Sensor**: Detecta si la muestra está "inflada" con votantes de un bloque.
+                    - **Protección de Suelo**: Nunca estima por debajo del **90% del Voto Directo** declarado.
+                    """)
+                
+                with col2:
+                    st.markdown("""
+                    ### Voto Directo (Crudo)
+                    - Es la intención de voto declarada por el ciudadano en la encuesta.
+                    - Representa el **"suelo de realidad"** del que parte el modelo.
+                    - No incluye corrección técnica por mentira o falta de recuerdo.
+                    """)
+                    
+                    st.markdown("""
+                    ### Método Aldabón-Claude
+                    - **K-Factor Amortiguado (0.40)**: Equilibra recuerdo e intención actual.
+                    - **Modelo Estático**: No aplica penalizaciones por sesgo de muestra.
+                    - La predicción más conservadora basada estrictamente en la declaración.
+                    """)
+            
+            # --- GUÍA DIDÁCTICA: FÓRMULAS ---
+            with st.expander("📐 Explicación Técnica de las Fórmulas (Aldabón-Gemini 2.6)", expanded=False):
+                st.markdown("""
+                ## ¿Cómo se "cocina" una encuesta? (Nivel Bachillerato)
+                
+                Para que veas cómo funciona la cocina, vamos a usar los mismos datos para los tres modelos con el **"Partido de la Esperanza" (PE)**:
+                
+                *   **Voto Directo (VD)**: **20%** (lo que dicen hoy).
+                *   **Recuerdo de Voto (RV)**: **25%** (lo que dicen que votaron en 2023).
+                *   **Voto Real 2023 (VR)**: **20%** (lo que votaron de verdad).
+                *   **Indecisos (ID)**: **15%**.
+                
+                ---
+                
+                ### 1. Modelo Alamino-Tezanos (CIS)
+                **Lógica**: Suma los indecisos según su simpatía.
+                *   **Paso 1**: Mira a los indecisos (15%) y ve que 1 de cada 3 (33%) simpatiza con el PE.
+                *   **Paso 2 (Cálculo)**: $20\\% (VD) + (15\\% (ID) \\times 0.33) = 20\\% + 5\\%$
+                *   **Resultado Final**: **25.0%**
+                *   *¿Qué ha pasado?*: El modelo ha "rescatado" a los indecisos y los ha sumado al partido.
+                
+                ---
+                
+                ### 2. Modelo Aldabón-Claude (Matemático)
+                **Lógica**: Corrige el error de memoria usando el **Factor K**.
+                *   **Paso 1 (Error de Memoria)**: La gente dice que votó 25% pero fue un 20%. El error es $20 / 25 = 0.8$.
+                *   **Paso 2 (Amortiguación)**: No aplicamos el error a lo bruto, usamos un factor de 0.40.
+                    $K = 1 + (0.8 - 1) \\times 0.40 = 1 - 0.08 = 0.92$.
+                *   **Paso 3 (Cálculo)**: $20\\% (VD) \\times 0.92 = 18.4\\%$.
+                *   **Resultado Final**: **18.4%**
+                *   *¿Qué ha pasado?*: Al detectar que la muestra estaba "inflada" de ex-votantes de ese partido, ha bajado la estimación para ser realistas.
+                
+                ---
+                
+                ### 3. Modelo Aldabón-Gemini 2.6 (Inteligente)
+                **Lógica**: Usa el Factor K + Sensor de Sesgo + Suelo de Protección.
+                *   **Paso 1 (Capa Base)**: Parte del cálculo de Claude ($18.4\\%$).
+                *   **Paso 2 (Sensor de Sesgo)**: Como el sesgo de recuerdo es alto ($25/20 = 1.25$), Gemini sospecha desmovilización y aplica una penalización de fidelidad del 3% ($0.97$).
+                    $18.4\\% \\times 0.97 = 17.85\\%$.
+                *   **Paso 3 (Protección de Suelo)**: Gemini mira el Voto Directo (20%) y aplica la regla del 90%.
+                    $Suelo = 20\\% \\times 0.90 = 18.0\\%$.
+                *   **Paso 4 (Comparación)**: Como $17.85\\%$ es menor que el suelo ($18.0\\%$), el modelo **protege el voto confesado**.
+                *   **Resultado Final**: **18.0%**
+                *   *¿Qué ha pasado?*: Gemini detectó el sesgo pero, por sentido común sociológico, no permitió que el partido bajara de su suelo de realidad.
+                """)
         else:
-            st.error("Error analizando el archivo Excel. Verifique el formato.")
-            success_load = False
+            st.warning("No se encontraron datos de partidos en este estudio.")
             
-    else:
-        # Archivo no encontrado -> Mostrar instrucciones (study_type contains msg)
-        st.warning(f"⚠️ {study_type}")
-        success_load = False
+    except Exception as e:
+        import traceback
+        st.error(f"Error al analizar el estudio: {e}")
+        st.code(traceback.format_exc())
+else:
+    st.info("👈 Selecciona un estudio del sidebar o sube uno nuevo.")
 
-if not success_load:
-    st.info("Por favor descarga el archivo y colócalo en la carpeta `data/cis_studies` para continuar.")
-    st.stop()
-
-
-# --- KPIs (Dinámicos) ---
-col1, col2, col3 = st.columns(3)
-with col1:
-    sesgo_psoe = official_data.get('PSOE', 0) - benedicto_data.get('PSOE', 0)
-    st.metric(
-        label="Sesgo Tezanos (PSOE)",
-        value=f"{sesgo_psoe:+.1f}%",
-        delta="Sobrestimación CIS" if sesgo_psoe > 0 else "Subestimación",
-        delta_color="inverse"
-    )
-
-with col2:
-    voto_oculto_pp = benedicto_data.get('PP', 0) - raw_data.get('PP', 0)
-    st.metric(
-        label="Voto Oculto (PP)",
-        value=f"{voto_oculto_pp:+.1f}%",
-        help="Diferencia entre intención directa y estimación final"
-    )
-
-with col3:
-    st.metric(
-        label="Indecisos Distribuidos",
-        value="~15%",
-        help="Basado en matrices de transferencia"
-    )
-
-# --- GRÁFICO COMPARATIVO ---
-st.subheader(f"Estimación {selected_study_name}")
-
-# Crear DataFrame para el gráfico
-chart_data = []
-for p in labels:
-    if benedicto_data.get(p,0) > 0.5: # Show significant only
-        chart_data.append({'Partido': p, 'Estimación (%)': raw_data.get(p,0), 'Método': '1. Voto Directo'})
-        chart_data.append({'Partido': p, 'Estimación (%)': official_data.get(p,0), 'Método': '2. Alamino-Tezanos (CIS)'})
-        chart_data.append({'Partido': p, 'Estimación (%)': benedicto_data.get(p,0), 'Método': '3. Aldabón-Gemini'})
-
-df_chart = pd.DataFrame(chart_data)
-
-# Gráfico de barras agrupadas MEJORADO
-base = alt.Chart(df_chart).encode(
-    x=alt.X('Partido:N', axis=alt.Axis(title=None, labelAngle=-45)),
-)
-
-bar = base.mark_bar().encode(
-    y=alt.Y('Estimación (%)', title='Estimación de Voto (%)'),
-    color=alt.Color('Método:N', legend=alt.Legend(title="Modelo", orient="top")),
-    xOffset=alt.XOffset('Método:N'), # Desplazamiento para agrupar
-    tooltip=['Partido', 'Estimación (%)', 'Método']
-)
-
-chart = bar.properties(
-    height=500
-).configure_view(
-    stroke='transparent'
-)
-
-st.altair_chart(chart, use_container_width=True)
-
-# --- TABLA DE DATOS ---
-st.subheader("Datos Detallados")
-table_df = pd.DataFrame({
-    'Partido': labels,
-    'Voto Directo': [raw_data.get(p,0) for p in labels],
-    'Alamino-Tezanos': [official_data.get(p,0) for p in labels],
-    'Aldabón-Gemini': [benedicto_data.get(p,0) for p in labels],
-})
-# Calculate diff
-table_df['Diferencia (Ben vs CIS)'] = table_df['Aldabón-Gemini'] - table_df['Alamino-Tezanos']
-
-st.dataframe(
-    table_df.style.format("{:.1f}%", subset=['Voto Directo', 'Alamino-Tezanos', 'Aldabón-Gemini', 'Diferencia (Ben vs CIS)'])
-    .applymap(lambda v: 'color: red' if v < 0 else 'color: green', subset=['Diferencia (Ben vs CIS)'])
-)
-
-# --- GUÍA DIDÁCTICA: COCINA ELECTORAL ---
+# Footer
 st.markdown("---")
-with st.expander("🎓 Guía Didáctica: Desmontando la 'Cocina' Electoral (Nivel Experto)", expanded=True):
-    st.markdown("""
-    ### 🧑‍🍳 ¿Por qué todos los datos del CIS parecen incorrectos?
-    
-    En demoscopia, la "cocina" es el proceso matemático para corregir los errores de la encuesta bruta (gente que miente, gente que no contesta).
-    Aquí explicamos **con total transparencia** por qué el CIS oficial falla y cómo lo arreglamos nosotros.
-    """)
-    
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        st.info("""
-        #### 1. La Receta Tezanos (Modelo Inercia-Incertidumbre)
-        **Filosofía: "El voto es un estado de ánimo"**
-        
-        Tezanos asume que el votante es fluido y que su "norte" es la simpatía actual.
-        
-        **🌀 ¿Cómo gestiona a los Indecisos?**
-        Si alguien dice *"No sé"*:
-        1.  **Simpatía Declarada:** Le pregunta *"¿Por qué partido siente más simpatía?"*. Si responde PSOE, le asigna voto al PSOE.
-        2.  **Valoración de Líderes:** Si no tiene simpatía, mira qué líder valora mejor.
-        
-        **❌ El Fallo Fatal: El "Voto Vergonzante"**
-        En España, el votante de derecha (PP/VOX) tiende a ocultar sus intenciones ("Voto Oculto") y a menudo valora mal a sus propios líderes por crítica interna, pero luego les vota por lealtad ideológica.
-        *   **Consecuencia:** Tezanos asigna a casi todos los indecisos a la izquierda (porque es "menos vergonzante" declarar simpatía progresista), inflando artificialmente al PSOE/Sumar en 3-5 puntos.
-        """)
-
-    with col_b:
-        st.success("""
-        #### 2. La Receta Aldabón-Gemini (Modelo de Recuerdo)
-        **Filosofía: "El comportamiento pasado predice el futuro"**
-        
-        Nosotros no nos fiamos de lo que la gente *dice* sentir hoy. Nos fiamos de lo que *hicieron* ayer.
-        
-        **⚖️ Paso 1: El Detector de Sesgos (Factor $k$)**
-        Comparamos la muestra con la realidad de las urnas (23J):
-        *   *Ejemplo:* Si el 40% de los encuestados dice "Yo voté a Pedro Sánchez", pero sabemos que solo le votó el 31,7% real, **bajamos el peso** de cada respuesta socialista (valen 0,79 votos).
-        *   *Ejemplo:* Si solo el 20% admite haber votado a Feijóo (vs 33,1% real), sabemos que hay mucho "voto oculto". **Subimos el peso** de cada respuesta popular (valen 1,65 votos).
-        
-        **🔄 Paso 2: La Matriz de Fugas**
-        Si un votante nos dice "Voté PP en 2023, pero ahora No Sabe", no adivinamos. Aplicamos la estadística de sus compañeros decididos:
-        *   Si el 90% de los antiguos votantes del PP se quedan, asumimos que este indeciso tiene un 90% de probabilidad de volver.
-        
-        **Resultado:** Un "mapa de calor" realista que aflora el voto oculto de la derecha y desinfla la sobre-representación de la izquierda.
-        """)
-
-    st.markdown("---")
-    st.caption("**Conclusión:** Mientras Tezanos mide la temperatura emocional (quién cae mejor), Aldabón-Gemini mide la lealtad estructural (quién tiene la base más sólida).")
-
-with st.expander("🛠️ Anexo Técnico: Fórmulas y Algoritmos (White Paper)", expanded=False):
-    st.markdown("""
-    ### 1. Definición de Variables Base
-    
-    *   **$V_p$ (Voto Real 23J):** Porcentaje real obtenido por el partido $p$ en las Elecciones Generales de Julio 2023 sobre el censo de voto válido.
-    *   **$R_{raw}$ (Recuerdo Bruto):** Porcentaje de encuestados en el CIS actual que declaran haber votado a $p$ en 2023.
-    *   **$S_p$ (Voto+Simpatía):** Intención directa declarada o simpatía explícita hacia el partido $p$ en la encuesta actual.
-    
-    ### 2. Algoritmo de Rectificación Aldabón-Gemini
-    
-    El modelo aplica una función de transformación lineal sobre la intención directa, calibrada por tres factores.
-    
-    #### A. Normalización del Recuerdo ($R_{norm}$)
-    Primero normalizamos el recuerdo bruto eliminando No contesta / No sabe para operar sobre Voto Válido Equivalente:
-    $$ R_{norm,p} = \\frac{R_{raw,p}}{\\sum_{i \\in Partidos} R_{raw,i}} \\times 100 $$
-    
-    #### B. Cálculo del Factor de Corrección ($K_p$)
-    Este coeficiente mide la sobredimensionamiento (autocomplacencia) o infra-representación (voto oculto) de cada electorado en la muestra.
-    $$ K_p = \\frac{V_p}{R_{norm,p}} $$
-    *   Si $K_p > 1$: Detectamos **Voto Oculto** (ej. PP/VOX suelen tener $K \\approx 1.3 - 1.6$).
-    *   Si $K_p < 1$: Detectamos **Sobrerrepresentación** (ej. PSOE suele tener $K \\approx 0.8 - 0.9$).
-    
-    #### C. Matriz de Ajuste Fino ($\Phi_p$ y $\\Lambda_p$)
-    Aplicamos correcciones de segunda derivada basadas en fidelidad histórica y liderazgo actual.
-    *   **Fidelidad ($\Phi_p$):** Tasa de retención estructural. Penaliza a partidos con alta volatilidad (Sumar/Podemos) y estabiliza el bipartidismo.
-        *   $\\Phi_{PSOE} = 0.93$ | $\\Phi_{PP} = 0.92$ | $\\Phi_{VOX} = 0.82$
-    *   **Liderazgo/Tendencia ($\Lambda_p$):** Factor de momento (Momentum). Corrige la inercia de campaña o viralidad reciente (ej. Alvise/SALF).
-        *   $\\Lambda_{SALF} = 1.20$ (Viralidad) | $\\Lambda_{PSOE} = 0.97$ (Desgaste Gobierno)
-    
-    ### 3. Fórmula Final de Estimación
-    La estimación final $E_p$ se calcula proyectando la intención directa corregida por el sesgo muestral y ajustada por los factores de fidelidad y coyuntura:
-    
-    $$ E_p = S_p \\times K_p \\times \\Phi_p \\times \\Lambda_p $$
-    
-    *Nota: El resultado se re-normaliza finalmente para asegurar que $\\sum E_p = 100\\%$.*
-    """)
-    st.caption("Documentación técnica extraída del código fuente `cis_analyzer.py` v2.1")
-
+st.markdown("*Desarrollado para análisis crítico de la 'cocina' electoral del CIS.*")
 

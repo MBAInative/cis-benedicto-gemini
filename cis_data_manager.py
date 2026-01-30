@@ -14,52 +14,8 @@ STUDY_MAP = {
     "Septiembre 2025": "3524"
 }
 
-# Metadatos adicionales para cada estudio
-STUDY_METADATA = {
-    "3543": {
-        "Elecciones": "Autonómicas (Aragón)", 
-        "Sondeo": "Enero-Febrero 2026", 
-        "N": "3.313 entrevistas",
-        "Campo": "20 de enero al 3 de febrero de 2026"
-    },
-    "3540": {
-        "Elecciones": "Generales (Barómetro)", 
-        "Sondeo": "Enero 2026", 
-        "N": "4.000 entrevistas (aprox.)",
-        "Campo": "2 al 12 de enero de 2026"
-    },
-    "3536": {
-        "Elecciones": "Generales (Barómetro)", 
-        "Sondeo": "Diciembre 2025", 
-        "N": "3.950 entrevistas",
-        "Campo": "1 al 13 de diciembre de 2025"
-    },
-    "3530": {
-        "Elecciones": "Generales (Barómetro)", 
-        "Sondeo": "Noviembre 2025", 
-        "N": "4.000 entrevistas",
-        "Campo": "2 al 12 de noviembre de 2025"
-    },
-    "3528": {
-        "Elecciones": "Generales (Barómetro)", 
-        "Sondeo": "Octubre 2025", 
-        "N": "3.800 entrevistas",
-        "Campo": "1 al 11 de octubre de 2025"
-    },
-    "3524": {
-        "Elecciones": "Generales (Barómetro)", 
-        "Sondeo": "Septiembre 2025", 
-        "N": "4.000 entrevistas",
-        "Campo": "1 al 12 de septiembre de 2025"
-    }
-}
-
+# Carpeta de datos
 DATA_DIR = "data/cis_studies"
-
-def get_study_metadata(study_name):
-    """Retorna un dict con información del estudio."""
-    study_id = STUDY_MAP.get(study_name)
-    return STUDY_METADATA.get(study_id, {"Elecciones": "Nacional", "Sondeo": "Desconocido"})
 
 def get_study_file(study_name):
     """
