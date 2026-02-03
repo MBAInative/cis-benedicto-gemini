@@ -1,0 +1,119 @@
+{
+  "3536-multi.xlsx": {
+    "tipo_clase": "BarometroNacional",
+    "hojas": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Resultados",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios",
+      "Tamaño de municipio",
+      "RV EG23"
+    ],
+    "voto_directo_total": 99.95,
+    "voto_directo": {
+      "PP": 15.16,
+      "PSOE": 23.31,
+      "VOX": 12.42,
+      "SUMAR": 5.52,
+      "SALF": 1.71,
+      "No Sabe": 15.49,
+      "Abstención": 6.54
+    },
+    "recuerdo_total": 100.0,
+    "recuerdo": {
+      "PP": 24.24,
+      "PSOE": 39.44,
+      "VOX": 10.47,
+      "SUMAR": 14.45
+    },
+    "estimacion_cis": {
+      "PP": 22.4,
+      "PSOE": 31.4,
+      "VOX": 17.6,
+      "SUMAR": "N/A",
+      "SALF": 2.4
+    }
+  },
+  "3540_multi.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hojas": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Marginales",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios",
+      "Tamaño de municipio",
+      "RV EG23"
+    ],
+    "voto_directo_total": 100.12,
+    "voto_directo": {
+      "PP": 15.9,
+      "PSOE": 23.2,
+      "VOX": 13.8,
+      "SUMAR": 4.8,
+      "SALF": 1.3,
+      "No Sabe": 15.3,
+      "Abstención": 6.3
+    },
+    "recuerdo_total": 100.0,
+    "recuerdo": {
+      "PP": 23.07,
+      "PSOE": 40.4,
+      "VOX": 11.96,
+      "SUMAR": 12.52
+    },
+    "estimacion_cis": {
+      "PP": 23.0,
+      "PSOE": 31.7,
+      "VOX": 17.7,
+      "SUMAR": 7.2,
+      "SALF": 1.8
+    }
+  },
+  "3543-multi_A.xlsx": {
+    "tipo_clase": "AvanceAutonomicas",
+    "hojas": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Resultados Aragón",
+      "Resultados Huesca",
+      "Resultados Teruel",
+      "Resultados Zaragoza",
+      "Sexo",
+      "Edad"
+    ],
+    "voto_directo_total": 100.2,
+    "voto_directo": {
+      "PP": 27.8,
+      "PSOE": 21.5,
+      "VOX": 12.0,
+      "SUMAR": 3.5,
+      "SALF": 1.6,
+      "No Sabe": 14.5,
+      "Abstención": 3.3
+    },
+    "recuerdo_total": 100.0,
+    "recuerdo": {
+      "PP": 33.99,
+      "PSOE": 35.53,
+      "VOX": 10.57,
+      "SUMAR": 3.9
+    },
+    "estimacion_cis": {
+      "PP": 35.3,
+      "PSOE": 26.7,
+      "VOX": 15.1,
+      "SUMAR": 5.0,
+      "SALF": 2.0
+    }
+  }
+}

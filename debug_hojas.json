@@ -1,0 +1,77 @@
+{
+  "3524_multi_A.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_estimacion_encontrada": "Estimación de Voto",
+    "usa_resultados": false,
+    "hojas_disponibles": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Resultados",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios"
+    ]
+  },
+  "3528_multi_A.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_estimacion_encontrada": "Estimación de Voto",
+    "usa_resultados": false,
+    "hojas_disponibles": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Resultados",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios"
+    ]
+  },
+  "3530_multi_A.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_estimacion_encontrada": "Estimación de Voto",
+    "usa_resultados": false,
+    "hojas_disponibles": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Resultados",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios"
+    ]
+  },
+  "3536-multi.xlsx": {
+    "tipo_clase": "BarometroNacional",
+    "hoja_estimacion_encontrada": "Resultados",
+    "usa_resultados": true,
+    "hojas_disponibles": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Resultados",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios"
+    ]
+  },
+  "3540_multi.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_estimacion_encontrada": "Estimación de Voto",
+    "usa_resultados": false,
+    "hojas_disponibles": [
+      "Contenidos",
+      "Ficha técnica",
+      "Tabla ponderaciones",
+      "Notas",
+      "Marginales",
+      "Sexo",
+      "Edad",
+      "Nivel de estudios"
+    ]
+  }
+}

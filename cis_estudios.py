@@ -62,68 +62,71 @@ class EstudioCIS(ABC):
 
     def get_context_biases(self) -> dict:
         """
-        Define sesgos fidelidad, transvases y justificación experta.
-        Genera los coeficientes dinámicamente según la sociología del estudio.
+        Define sesgos fidelidad (Φ), momentum (Λ), transvases y justificación experta.
+        
+        Aldabón-Gemini 3.0: Parámetros fijos para máxima transparencia y reproducibilidad.
+        
+        Fórmula: E_p = S_p × K_p × Φ_p × Λ_p
         """
-        ctx = self._infer_context()
-        rur = ctx['ruralidad']
-        pol = ctx['polarizacion']
-        rec_bias = ctx.get('sesgo_recuerdo', {})
-        
-        # 1. Coeficientes de fidelidad dinámicos (Expert Rules + Sensed Data)
-        # El PSOE resiste mejor en zonas rurales (rur > 0.45)
-        fid_psoe = 0.90 + (min(0.08, (rur - 0.4) * 0.4) if rur > 0.4 else -0.05)
-        
-        # 2. Corrección por Sesgo de Recuerdo (Recall Bias) - Aldabón-Gemini 2.4
-        # Si el PSOE está muy inflado en el recuerdo, bajamos su fidelidad
-        psoe_bias = rec_bias.get('PSOE', 1.0)
-        psoe_correction = 0
-        if psoe_bias > 1.15: # Solo si el sesgo es evidente (>15%)
-            psoe_correction = min(0.15, (psoe_bias - 1.15) * 0.3)
-            fid_psoe -= psoe_correction
-        
-        # El bloque de derecha se moviliza en climas polarizados (pol > 0.5)
-        clima_mov = (pol - 0.5) * 0.3
-        
-        # Bonus moderado por "Voto Vergonzante"
-        vox_bias = rec_bias.get('VOX', 1.0)
-        vox_bonus = max(0, (1.0 - vox_bias) * 0.3) if vox_bias < 0.9 else 0
-
-        fid_pp = 1.05 + max(0.0, clima_mov * 0.5)
-        fid_vox = 1.10 + max(0.0, clima_mov * 0.7) + vox_bonus
-        
-        biases = {
-            'fidelidad': {
-                'PSOE': round(fid_psoe, 2),
-                'PP': round(fid_pp, 2),
-                'VOX': round(fid_vox, 2),
-                'SUMAR': 0.85, 
-                'PODEMOS': round(1.10 + max(0.0, clima_mov * 0.2), 2),
-                'SALF': 1.10,
-                'En Blanco': 1.0, 'Voto Nulo': 1.0
-            },
-            'transvases': {
-                'PSOE': {'PODEMOS': 0.08, 'SUMAR': 0.10, 'En Blanco': 0.05},
-                'PP': {'VOX': 0.05},
-                'VOX': {'PP': 0.10}
-            },
-            'justificacion': {
-                'Diagnóstico Sociológico': f"Clima: {'Rural' if rur > 0.45 else 'Urbano/Moderado'}. Polarización: {'Alta' if pol > 0.6 else 'Baja'}.",
-                'Sesgo de Muestra': f"Recall PSOE: {'Normal' if psoe_bias < 1.15 else f'Inflado (x{psoe_bias:.2f})'}. " + 
-                                   (f"Voto oculto VOX detectado (+{vox_bonus:.2f})." if vox_bonus > 0 else "Representatividad correcta de la derecha.")
-            }
+        # 1. Coeficientes de Fidelidad (Φ) - Tasa de retención estructural
+        # Valores por defecto neutros. Pueden ajustarse si hay datos históricos de panel.
+        fidelidad = {
+            'PSOE': 1.0,
+            'PP': 1.0,
+            'VOX': 1.0,
+            'SUMAR': 1.0,
+            'PODEMOS': 1.0,
+            'SALF': 1.0,
+            'ERC': 1.0,
+            'JUNTS': 1.0,
+            'BILDU': 1.0,
+            'PNV': 1.0,
+            'BNG': 1.0,
+            'CHA': 1.0,
+            'PAR': 1.0,
+            'En Blanco': 1.0,
+            'Voto Nulo': 1.0
         }
         
-        # 2. Integrar segundas opciones detectadas como voto refugio (opcional)
-        segundas = ctx['transvases_potenciales'].get('GLOBAL', {})
-        if segundas:
-             for p_orig in ['PSOE', 'PP', 'VOX', 'SUMAR', 'PODEMOS']:
-                if p_orig not in biases['transvases']: biases['transvases'][p_orig] = {}
-                for p_dest, peso in segundas.items():
-                    if p_dest != p_orig:
-                        biases['transvases'][p_orig][p_dest] = biases['transvases'][p_orig].get(p_dest, 0) + (peso * 0.15)
-                
-        return biases
+        # 2. Coeficientes de Momentum (Λ) - Factor de coyuntura actual
+        # VALORES POR DEFECTO NEUTROS - El usuario puede ajustarlos en la UI
+        momentum = {
+            'PSOE': 1.0,
+            'PP': 1.0,
+            'VOX': 1.0,
+            'SUMAR': 1.0,
+            'PODEMOS': 1.0,
+            'SALF': 1.0,
+            'ERC': 1.0,
+            'JUNTS': 1.0,
+            'BILDU': 1.0,
+            'PNV': 1.0,
+            'BNG': 1.0,
+            'CHA': 1.0,
+            'PAR': 1.0,
+            'En Blanco': 1.0,
+            'Voto Nulo': 1.0
+        }
+        
+        # 3. Matriz de Transvases (voto refugio ideológico)
+        transvases = {
+            'PSOE': {'SUMAR': 0.10, 'PODEMOS': 0.08, 'En Blanco': 0.05},
+            'PP': {'VOX': 0.05},
+            'VOX': {'PP': 0.12, 'SALF': 0.05},
+            'SUMAR': {'PSOE': 0.08, 'PODEMOS': 0.10},
+            'PODEMOS': {'SUMAR': 0.12}
+        }
+        
+        return {
+            'fidelidad': fidelidad,
+            'momentum': momentum,
+            'transvases': transvases,
+            'justificacion': {
+                'Modelo': 'Aldabón-Gemini 3.0 (Parámetros Fijos)',
+                'Φ (Fidelidad)': 'Tasa de retención estructural histórica',
+                'Λ (Momentum)': 'Factor de coyuntura actual (desgaste/viralidad)'
+            }
+        }
     
     @abstractmethod
     def get_partidos_referencia(self) -> dict:
@@ -569,6 +572,16 @@ class EstudioCIS(ABC):
                     continue
             
             valor = self._try_float(row.iloc[col_idx])
+            
+            # Si no hay valor en esta fila, verificar si el nombre es largo 
+            # y el valor está en la siguiente fila (problema de celdas expandidas)
+            if valor is None and len(partido_raw) > 12:
+                if i + 1 < len(df):
+                    next_row = df.iloc[i + 1]
+                    if pd.isna(next_row.iloc[0]) or str(next_row.iloc[0]).strip() == '':
+                        # La siguiente fila tiene nombre vacío, buscar valor ahí
+                        valor = self._try_float(next_row.iloc[col_idx])
+            
             if valor is None:
                 continue
             
@@ -664,7 +677,9 @@ class EstudioCIS(ABC):
             'PSOE': 'PSOE', 'PARTIDO SOCIALISTA': 'PSOE',
             'PP': 'PP', 'PARTIDO POPULAR': 'PP',
             'VOX': 'VOX',
-            'SUMAR': 'SUMAR', 'MOVIMIENTO SUMAR': 'SUMAR',
+            'SUMAR': 'SUMAR', 'MOVIMIENTO SUMAR': 'SUMAR', 
+            'IU-MOVIMIENTO SUMAR': 'SUMAR', 'IU MOVIMIENTO SUMAR': 'SUMAR',
+            'IU-SUMAR': 'SUMAR', 'IU': 'SUMAR',
             'PODEMOS': 'PODEMOS', 'UNIDAS PODEMOS': 'PODEMOS',
             'SALF': 'SALF', 'SE ACABÓ LA FIESTA': 'SALF',
             'ERC': 'ERC', 'ESQUERRA REPUBLICANA': 'ERC',
@@ -777,12 +792,20 @@ class EstudioCIS(ABC):
         
         return recuerdo
     
-    def calcular_aldabon_gemini(self) -> dict:
+    def calcular_aldabon_gemini(self, custom_momentum: dict = None) -> dict:
         """
-        Calcula la estimación usando el método Aldabón-Gemini.
+        Calcula la estimación usando el método Aldabón-Gemini 3.0.
         
-        Fórmula: Estimación = Voto_Directo × K × Ajuste_Fidelidad
-        Donde K = Voto_Real_Referencia / Recuerdo_Encuesta
+        Fórmula: E_p = S_p × K_p × Φ_p × Λ_p
+        Donde:
+            S_p = Voto Directo (intención declarada + simpatía)
+            K_p = Factor de corrección por recuerdo de voto
+            Φ_p = Fidelidad estructural (tasa de retención histórica)
+            Λ_p = Momentum (factor de coyuntura: desgaste/viralidad)
+        
+        Args:
+            custom_momentum: Dict opcional con valores Λ personalizados por partido.
+                            Si se proporciona, sobrescribe los valores por defecto.
         """
         voto_directo = self.extraer_voto_directo()
         recuerdo = self.extraer_recuerdo_voto()
@@ -791,57 +814,61 @@ class EstudioCIS(ABC):
         if not voto_directo or not recuerdo:
             return {}
         
-        # Calcular factores K
+        # A. Normalización del Recuerdo y cálculo de Factor K
         sum_rec = sum(recuerdo.values())
         k_factors = {}
         for p, voto_real in partidos_ref.items():
             rec = recuerdo.get(p, 0)
             if rec > 0 and sum_rec > 0:
-                rec_pct = (rec / sum_rec) * 100
-                k = voto_real / rec_pct
-                # Amortiguación del factor K (Aldabón-Gemini 2.6: Mayor peso al Voto Directo)
-                # Bajamos el factor de 0.75 a 0.40 para evitar que el sesgo de memoria 
-                # destruya la intención de voto declarada.
-                k_factors[p] = 1.0 + (k - 1.0) * 0.40
+                rec_norm = (rec / sum_rec) * 100  # R_norm,p
+                k_raw = voto_real / rec_norm      # K_p crudo
+                # Factor K SIN amortiguación (aplicar 100%)
+                k_factors[p] = k_raw
             else:
                 k_factors[p] = 1.0
         
-        # Obtener configuración contextual (Gurú 2.1)
+        # Obtener parámetros Φ (fidelidad), Λ (momentum) y transvases
         config = self.get_context_biases()
-        fidelidad_map = config['fidelidad']
+        fidelidad_map = config['fidelidad']    # Φ
+        
+        # Usar momentum personalizado si se proporciona, sino usar el por defecto
+        momentum_map = config['momentum'].copy()  # Λ base
+        if custom_momentum:
+            momentum_map.update(custom_momentum)
+        
         transvases_map = config['transvases']
         
-        # 1. Aplicar fórmula base (Voto Directo * K * Fidelidad) y calcular masa "perdida"
+        # B. Aplicar fórmula: E_p = S_p × K_p × Φ_p × Λ_p
         estimacion_raw = {}
-        masa_perdida = {} # Para redistribución de "voto refugio"
+        masa_perdida = {}
         
         for p, vd in voto_directo.items():
             if p in ['No Sabe', 'No Contesta', 'Abstención']:
                 continue
                 
-            # Intentar obtener K-factor. Si es categoría técnica, buscarla en partidos_ref o usar 1.
             k = k_factors.get(p, 1.0)
             if p in ['En Blanco', 'Voto Nulo'] and p not in k_factors:
                 rec_val = recuerdo.get(p, 0)
                 ref_val = partidos_ref.get(p, 0)
                 if rec_val > 0:
-                    k = 1.0 + ((ref_val / rec_val) - 1.0) * 0.75 # K amortiguado
+                    k = 1.0 + ((ref_val / rec_val) - 1.0) * 0.75
                 else:
                     k = 1.0
 
-            fid = fidelidad_map.get(p, 1.0)
+            phi = fidelidad_map.get(p, 1.0)     # Φ_p
             
-            # Valor base cocinado amortiguado
-            base_val = vd * k
-            # Protección Suelo: El cocinado no debería bajar mucho del Voto Directo
-            # a menos que haya una fidelidad bajísima detectada.
-            estimacion_raw[p] = max(vd * 0.9, base_val * fid)
+            # Fórmula base SIN momentum: base = S_p × K_p × Φ_p
+            base_val = vd * k * phi
             
-            # La masa que no se queda en el partido puede ir a otros (transvase)
-            masa_perdida[p] = base_val * (1 - fid) if (base_val * fid) < base_val else 0
+            # PROTECCIÓN SUELO: La estimación NUNCA puede ser menor que el VD declarado
+            # Criterio metodológico: el modelo suma, nunca resta respecto a lo declarado
+            estimacion_raw[p] = max(vd, base_val)
             
-        # 2. Aplicar "Voto Refugio" (Transvases ideológicos)
-        # Redistribuir la masa perdida entre los partidos del mismo bloque
+            # Masa perdida para redistribución (transvases de fidelidad)
+            if base_val < vd * k:
+                masa_perdida[p] = (vd * k) - base_val
+        
+        # C. Aplicar Transvases de fidelidad (voto refugio ideológico)
         for origen, masa in masa_perdida.items():
             if masa > 0 and origen in transvases_map:
                 destinos = transvases_map[origen]
@@ -850,95 +877,85 @@ class EstudioCIS(ABC):
                         refugio_val = masa * porcentaje
                         estimacion_raw[destino] = estimacion_raw.get(destino, 0.0) + refugio_val
         
-        # Normalizar a 100% incluyendo categorías de voto (Blanco/Nulo)
+        # D. Aplicar Momentum (Λ) con MATRIZ DE TRANSFERENCIA
+        # Cuando Λ < 1: los votos perdidos van a destinos específicos
+        # Cuando Λ > 1: los votos ganados vienen de Abstención
+        
+        # Matriz de transferencia a partidos del mismo sector (sin abstención)
+        # La abstención se calcula dinámicamente según nivel de desmovilización
+        MATRIZ_SECTOR = {
+            'PSOE': {'SUMAR': 0.67, 'PODEMOS': 0.33},  # Izquierda
+            'PP': {'VOX': 0.70, 'En Blanco': 0.30},    # Derecha
+            'VOX': {'PP': 0.85, 'En Blanco': 0.15},    # Derecha
+            'SALF': {'VOX': 0.60, 'En Blanco': 0.40},  # Ultraderecha
+            'SUMAR': {'PSOE': 0.67, 'PODEMOS': 0.33},  # Izquierda
+            'PODEMOS': {'SUMAR': 0.57, 'PSOE': 0.43},  # Izquierda
+        }
+        
+        def calcular_porcentaje_abstencion(momentum: float) -> float:
+            """
+            Calcula el porcentaje que va a abstención según nivel de desmovilización.
+            - Λ >= 0.90: 40% abstención (desmovilización leve)
+            - Λ 0.80-0.90: 50% abstención (desmovilización moderada)
+            - Λ < 0.80: 60% abstención (desmovilización severa)
+            """
+            if momentum >= 0.90:
+                return 0.40
+            elif momentum >= 0.80:
+                return 0.50
+            else:
+                return 0.60
+        
+        # Calcular deltas de momentum
+        deltas = {}
+        for p, base in estimacion_raw.items():
+            lam = momentum_map.get(p, 1.0)
+            delta = base * (lam - 1.0)  # Positivo si gana, negativo si pierde
+            deltas[p] = (delta, lam)  # Guardar también el lambda para calcular abstención
+        
+        # Aplicar transferencias con abstención dinámica
+        for p, (delta, lam) in deltas.items():
+            if delta < 0:  # Partido pierde votos
+                perdida = abs(delta)
+                estimacion_raw[p] -= perdida
+                
+                # Calcular abstención según nivel de desmovilización
+                pct_abstencion = calcular_porcentaje_abstencion(lam)
+                pct_sector = 1.0 - pct_abstencion
+                
+                # Enviar a abstención
+                estimacion_raw['Abstención'] = estimacion_raw.get('Abstención', 0) + perdida * pct_abstencion
+                
+                # Redistribuir resto a partidos del sector
+                if p in MATRIZ_SECTOR:
+                    for destino, porcentaje in MATRIZ_SECTOR[p].items():
+                        if destino in estimacion_raw:
+                            estimacion_raw[destino] += perdida * pct_sector * porcentaje
+                        elif destino == 'En Blanco':
+                            estimacion_raw['En Blanco'] = estimacion_raw.get('En Blanco', 0) + perdida * pct_sector * porcentaje
+                else:
+                    # Si no está en la matriz, todo a abstención
+                    estimacion_raw['Abstención'] += perdida * pct_sector
+                    
+            elif delta > 0:  # Partido gana votos (movilización)
+                ganancia = delta
+                estimacion_raw[p] += ganancia
+                # Los votos vienen principalmente de Abstención
+                if 'Abstención' in estimacion_raw:
+                    estimacion_raw['Abstención'] = max(0, estimacion_raw['Abstención'] - ganancia)
+        
+        # E. Normalización final a 100%
         estimacion = {}
         total = sum(estimacion_raw.values())
         if total > 0:
-            # Normalizar y redondear
             estimacion = {p: round(v * 100 / total, 1) for p, v in estimacion_raw.items()}
-            # Ajustar para que sume exactamente 100%
             suma_actual = sum(estimacion.values())
             if abs(suma_actual - 100) > 0.01 and estimacion:
-                # Ajustar el valor más grande para compensar diferencia
                 partido_mayor = max(estimacion, key=estimacion.get)
                 estimacion[partido_mayor] = round(estimacion[partido_mayor] + (100 - suma_actual), 1)
         
         return estimacion
     
-    def calcular_aldabon_claude(self) -> dict:
-        """
-        Calcula la estimación usando el método Aldabón-Claude.
-        
-        Enfoque: Aplicar SOLO el Factor K de corrección por recuerdo de voto,
-        SIN los ajustes de fidelidad adicionales que usa Aldabón-Gemini.
-        
-        Esto es más conservador que Gemini (que aplica ajustes de fidelidad)
-        pero diferente del CIS (que usa lógica difusa e inercia).
-        
-        Fórmula: Estimación = Voto_Directo × K
-        Donde K = Voto_Real_Referencia / Recuerdo_Encuesta
-        """
-        voto_directo = self.extraer_voto_directo()
-        recuerdo = self.extraer_recuerdo_voto()
-        partidos_ref = self.get_partidos_referencia()
-        
-        if not voto_directo:
-            return {}
-        
-        # Si no hay recuerdo, devolver Voto Directo normalizado
-        if not recuerdo:
-            total = sum(voto_directo.values())
-            if total > 0:
-                return {p: round(v * 100 / total, 1) for p, v in voto_directo.items()}
-            return {}
-        
-        # Calcular factores K (sin ajustes de fidelidad)
-        sum_rec = sum(recuerdo.values())
-        k_factors = {}
-        for p, voto_real in partidos_ref.items():
-            rec = recuerdo.get(p, 0)
-            if rec > 0 and sum_rec > 0:
-                rec_pct = (rec / sum_rec) * 100
-                # Factor K puro, sin modificaciones
-                k_factors[p] = voto_real / rec_pct
-            else:
-                k_factors[p] = 1.0
-        
-        # Aplicar fórmula simple usando la fidelidad base sin transvases (modelo conservador)
-        fid_map = self.get_context_biases()['fidelidad']
-        estimacion_raw = {}
-        for p, vd in voto_directo.items():
-            # Solo cocinar partidos y categorías de voto (excluir NS/NC/Abstención)
-            if p in ['No Sabe', 'No Contesta', 'Abstención']:
-                continue
-                
-            # K-factor amortiguado para todas las categorías incluyendo Blanco/Nulo
-            k = k_factors.get(p, 1.0)
-            if p in ['En Blanco', 'Voto Nulo'] and p not in k_factors:
-                rec_val = recuerdo.get(p, 0)
-                ref_val = partidos_ref.get(p, 0)
-                if rec_val > 0:
-                    k = 1.0 + ((ref_val / (rec_val/sum_rec*100) if sum_rec>0 else 1) - 1.0) * 0.75
-                else:
-                    k = 1.0
-
-            fid = fid_map.get(p, 1.0)
-            # Limitar factor K para evitar distorsiones extremas
-            k = max(0.5, min(2.0, k))
-            estimacion_raw[p] = vd * k * fid
-        
-        # Normalizar a 100% solo los partidos
-        estimacion = {}
-        total = sum(estimacion_raw.values())
-        if total > 0:
-            estimacion = {p: round(v * 100 / total, 1) for p, v in estimacion_raw.items()}
-            # Ajustar para que sume exactamente 100%
-            suma_actual = sum(estimacion.values())
-            if abs(suma_actual - 100) > 0.01 and estimacion:
-                partido_mayor = max(estimacion, key=estimacion.get)
-                estimacion[partido_mayor] = round(estimacion[partido_mayor] + (100 - suma_actual), 1)
-        
-        return estimacion
 
 
 class AvanceGenerales(EstudioCIS):
@@ -1016,8 +1033,43 @@ class AvanceAutonomicas(EstudioCIS):
         return norm # Retornará "" si nada funcionó
 
     def get_context_biases(self) -> dict:
-        """Ajustes automáticos basados en la sociología detectada."""
-        return super().get_context_biases()
+        """
+        Ajustes específicos para elecciones autonómicas.
+        Sobrescribe parámetros base con datos regionales específicos.
+        """
+        # Obtener configuración base
+        config = super().get_context_biases()
+        
+        # Sobrescribir con parámetros específicos por comunidad
+        if self.comunidad == 'ARAGON':
+            # Datos de fidelidad basados en matriz de transferencia real
+            # Fuente: CIS Preelectoral Aragón Febrero 2026
+            config['fidelidad'] = {
+                'PP': 0.78,              # 78% retención (dato real)
+                'PSOE': 0.59,            # 59% retención (dato real)
+                'VOX': 0.82,             # 82% retención (dato real)
+                'CHA': 0.55,             # 55% retención (dato real)
+                'TERUEL EXISTE': 0.56,   # 56% retención (dato real) - "Aragón Existe"
+                'PODEMOS': 0.45,         # 45% retención (dato real)
+                'SUMAR': 0.59,           # 59% retención (dato real) - IU-Sumar
+                'PAR': 0.24,             # 24% retención (dato real)
+                'SALF': 0.90,            # Sin datos, neutro
+                'En Blanco': 1.0,
+                'Voto Nulo': 1.0
+            }
+            
+            # Matriz de transvases basada en datos reales de Aragón
+            config['transvases'] = {
+                'PSOE': {'PP': 0.08, 'PODEMOS': 0.08},       # 8% a PP, 8% a Podemos
+                'PP': {'VOX': 0.07},                          # 7% a VOX (el 7% de indecisos)
+                'VOX': {'PP': 0.07},                          # 7% a PP
+                'CHA': {'PP': 0.12, 'OTROS': 0.11},          # 12% a PP, 11% a otros
+                'SUMAR': {'PP': 0.12, 'PSOE': 0.09, 'VOX': 0.07},  # Transferencia cruzada
+                'PODEMOS': {'SUMAR': 0.11},                   # 11% a Sumar (PP en la imagen)
+                'PAR': {'CHA': 0.20, 'PP': 0.05, 'PSOE': 0.07}  # Fragmentación alta
+            }
+        
+        return config
 
 
 class BarometroNacional(EstudioCIS):

@@ -1,467 +1,425 @@
 import pandas as pd
 import sys
 import os
+import re
+
 try:
     from cis_pdf_processor import extract_official_data_from_pdf
 except ImportError:
     extract_official_data_from_pdf = None
 
-def analyze_cis_professional(file_path, study_type=None):
-    print(f"--- Análisis Aldabón-Gemini: {file_path} (Tipo: {study_type}) ---", flush=True)
+def detect_ambito_y_ficha(xl):
+    """Analiza las hojas RV y la ficha técnica para determinar el ámbito real."""
+    meta = {
+        "ambito": "NACIONAL", "region": None, "n": "N/A", "campo": "N/A",
+        "referencia": "Generales 2023", "rv_sheet": None
+    }
     
-    try:
-        # 1. Cargar Datos del Excel
-        print(f"DEBUG: Leyendo archivo {file_path}...", flush=True)
-        xl = pd.ExcelFile(file_path)
-        print(f"DEBUG: Sheets found: {xl.sheet_names}", flush=True)
-        
-        # --- A. Cargar RV (Recuerdo de Voto) ---
-        if 'RV EG23' in xl.sheet_names:
-            df_rv = pd.read_excel(xl, sheet_name='RV EG23')
-        else:
-            print("ERROR: Hoja 'RV EG23' no encontrada.")
-            return None
-
-        # --- B. Cargar Estimación / Voto+Simpatía ---
-        df_estim_avance = None
-        df_estim_official = None
-        df_resultados = None
-        
-        # Nueva Lógica: Barómetro -> Buscar PDF
-        if study_type == "BAROMETRO":
-            # Attempt to find PDF counterpart
-            if extract_official_data_from_pdf:
-                base_dir = os.path.dirname(os.path.abspath(file_path))
-                filename = os.path.basename(file_path)
-                # Convention: 3536_multi.xlsx -> 3536_Estimacion.pdf
-                # Try replacing extension and suffix
-                study_id_match = filename.split('_')[0].split('-')[0] # Split by _ or -
-                pdf_candidates = [
-                    filename.replace('.xlsx', '.pdf').replace('_multi', '_Estimacion').replace('-multi', '_Estimacion'),
-                    f"{study_id_match}_Estimacion.pdf"
-                ]
-                
-                for pdf_name in pdf_candidates:
-                    pdf_path = os.path.join(base_dir, pdf_name)
-                    if os.path.exists(pdf_path):
-                        print(f"DEBUG: PDF detectado: {pdf_name}. Extrayendo estimación oficial...", flush=True)
-                        df_estim_official = extract_official_data_from_pdf(pdf_path)
-                        if df_estim_official is not None:
-                             # Ensure cols are compatible with logic below (Col 0=Party, Col 1=Val)
-                             # function returns [Party, Estimación], consistent.
-                             break
-        
-        # Check for 'Estimación de Voto' OR 'Estimación' in Excel (Fallback or Avance)
-        estim_sheet_name = None
-        if 'Estimación de Voto' in xl.sheet_names:
-            estim_sheet_name = 'Estimación de Voto'
-        elif 'Estimación' in xl.sheet_names:
-            estim_sheet_name = 'Estimación'
-        
-        if df_estim_official is None and estim_sheet_name is not None:
-            df_temp = pd.read_excel(xl, sheet_name=estim_sheet_name)
-            print(f"DEBUG: Leyendo hoja '{estim_sheet_name}'...", flush=True)
-            print(f"DEBUG: 'Estimación de Voto' columns: {len(df_temp.columns)}", flush=True)
+    # Detectar ámbito por hojas RV disponibles
+    rv_sheets = [s for s in xl.sheet_names if s.startswith('RV')]
+    if 'RV EA23' in rv_sheets:  # Elecciones Autonómicas
+        meta["ambito"] = "AUTONÓMICO"
+        meta["rv_sheet"] = "RV EA23"
+        meta["referencia"] = "Autonómicas 2023"
+    elif 'RV EG23' in rv_sheets:  # Elecciones Generales
+        meta["rv_sheet"] = "RV EG23"
+    elif rv_sheets:
+        meta["rv_sheet"] = rv_sheets[0]
+    
+    # Extraer región de ficha técnica
+    ficha_name = next((s for s in xl.sheet_names if 'FICHA' in s.upper()), None)
+    if ficha_name:
+        df_f = pd.read_excel(xl, sheet_name=ficha_name).fillna("")
+        for i in range(len(df_f)):
+            row_str = " ".join([str(x).upper() for x in df_f.iloc[i]]).strip()
             
-            # Check for Avance signatures (Voto directo + Estimación)
-            # Scan first few rows for headers
-            is_avance = False
-            for i in range(min(20, len(df_temp))):
-                row_str = df_temp.iloc[i].astype(str).values
-                # Check for key phrases in Avance headers
-                if any("Voto directo" in s for s in row_str) and any("Estimación de voto" in s for s in row_str):
-                     is_avance = True
-                     break
-            
-            if is_avance:
-                 print("DEBUG: Detectado formato AVANCE (con Voto Directo + Estimación).")
-                 df_estim_avance = df_temp
-                 df_estim_official = df_temp
-            elif len(df_temp.columns) < 5: 
-                print("DEBUG: Detectada hoja 'Estimación de Voto' simplificada (PDF Enriched).")
-                df_estim_official = df_temp 
-            elif estim_sheet_name == 'Estimación':
-                # Nuevo formato simplificado (3543+): col 0 = partido, col 1 = estimación
-                print("DEBUG: Detectado formato NUEVO SIMPLIFICADO (Hoja 'Estimación').")
-                df_estim_official = df_temp
-                df_estim_avance = df_temp  # Usar mismos datos para voto_simp
-            else:
-                # Fallback for legacy "wide" Avance files if any
-                print("DEBUG: Detectada hoja 'Estimación de Voto' compleja (Legacy Avance).")
-                df_estim_avance = df_temp 
-                df_estim_official = df_temp
+            if "ÁMBITO" in row_str:
+                 for val in df_f.iloc[i]:
+                      val_s = str(val).upper()
+                      if "ARAGÓN" in val_s or "ARAGON" in val_s:
+                           meta["region"] = "ARAGÓN"
+                           meta["ambito"] = "AUTONÓMICO"
+                           meta["referencia"] = "Autonómicas Aragón 2023"
+                      elif "COMUNIDAD" in val_s or "AUTONÓMICA" in val_s:
+                           meta["ambito"] = "AUTONÓMICO"
+                           region = val_s.replace("COMUNIDAD AUTÓNOMA DE", "").split("(")[0].strip()
+                           meta["region"] = region
+                           meta["referencia"] = f"Autonómicas {region} 2023"
+            elif "TAMAÑO" in row_str or "PRODUCTO" in row_str:
+                 for val in df_f.iloc[i]:
+                      if any(c.isdigit() for c in str(val)): meta["n"] = str(val); break
+            elif "CAMPO" in row_str or "FECHA" in row_str:
+                 for val in df_f.iloc[i]:
+                      if "/" in str(val) or "-" in str(val): meta["campo"] = str(val); break
 
-        # Check for 'Resultados' (Tabulaciones - Raw Data Source)
-        if df_estim_avance is None and 'Resultados' in xl.sheet_names:
-             print("DEBUG: Detectada hoja 'Resultados'. Buscando Voto+Simpatía...", flush=True)
-             df_resultados = pd.read_excel(xl, sheet_name='Resultados')
-             
-        print(f"DEBUG: Hojas procesadas.", flush=True)
-        
-        # 2. Resultados Reales 2023 (Baseline Interior - Estático)
-        # Fuente: Ministerio del Interior (Votos Válidos)
-        voto_real_23 = {
+    return meta
+
+def extract_baseline_from_rv(xl, rv_sheet_name):
+    """Extrae el baseline real de la hoja de Recuerdo de Voto.
+    
+    Busca la fila (N) que contiene los totales y extrae los porcentajes
+    de cada partido desde esa fila.
+    """
+    if not rv_sheet_name or rv_sheet_name not in xl.sheet_names:
+        return {}
+    
+    df_rv = pd.read_excel(xl, sheet_name=rv_sheet_name)
+    baseline = {}
+    
+    # Buscar fila (N) con totales
+    n_rows = df_rv[df_rv.iloc[:, 0].astype(str).str.contains(r"\(N\)", na=False, regex=True)].index
+    if n_rows.empty:
+        return {}
+    
+    n_idx = n_rows[0]
+    
+    # Buscar fila con nombres de partidos (suele estar antes de (N))
+    for r in range(max(0, n_idx-15), n_idx):
+        row_vals = [str(x).upper().strip() for x in df_rv.iloc[r].values]
+        # Buscar si hay partidos conocidos en esta fila
+        if any(p in " ".join(row_vals) for p in ['PP', 'PSOE', 'VOX']):
+            for col_idx, name in enumerate(row_vals):
+                p_key = normalize_name(name)
+                if p_key and len(p_key) > 1:
+                    # Extraer valor de la fila (N) para esta columna
+                    val = try_float(df_rv.iloc[n_idx, col_idx])
+                    if val and 0.1 < val < 100:
+                        baseline[p_key] = val
+            break
+    
+    return baseline
+
+def get_baseline_results(ambito, region=None):
+    """Retorna los resultados OFICIALES de referencia según el ámbito.
+    
+    Fuente: Ministerio del Interior - Resultados Electorales
+    - Generales 23J: https://resultados.elecciones.interior.gob.es/
+    - Autonómicas Aragón 2023: https://resultados2023.aragon.es/
+    """
+    # Generales 23J (Nacional) - Datos Oficiales Ministerio del Interior
+    if ambito == "NACIONAL":
+        return {
             'PP': 33.1, 'PSOE': 31.7, 'VOX': 12.4, 'SUMAR': 12.3,
             'ERC': 1.9, 'JUNTS': 1.6, 'EH BILDU': 1.4, 'EAJ-PNV': 1.1,
-            'BNG': 0.6, 'CC': 0.5, 'UPN': 0.2, 'PACMA': 0.7,
-            # 'SALF': 0.0, 'PODEMOS': 0.0 # No existían/iban en coalición
+            'BNG': 0.6, 'CC': 0.5, 'UPN': 0.2, 'PACMA': 0.7
         }
+    # Autonómicas Aragón 2023 - Datos Oficiales Gobierno de Aragón
+    if region == "ARAGÓN" and ambito == "AUTONÓMICO":
+        return {
+            'PP': 35.5, 'PSOE': 29.5, 'VOX': 11.3, 'CHA': 5.1,
+            'TERUEL EXISTE': 5.0, 'SUMAR': 4.2, 'PAR': 2.1, 'PODEMOS': 4.0
+        }
+    return {}
+
+def find_rv_sheet(xl):
+    """Localiza la hoja de Recuerdo de Voto por contenido."""
+    # Prioridad 1: Nombres directos
+    known = ['RV EG23', 'RV AU23', 'RECUERDO VOTO', 'RV 23-J', 'RECUERDO_VOTO', 'VOTO']
+    for k in known:
+        if k in xl.sheet_names and k != 'Estimación de Voto': return k
+    
+    # Prioridad 2: Heurística por contenido
+    for s in xl.sheet_names:
+        if 'ESTIMAC' in s.upper(): continue
+        try:
+             df_head = pd.read_excel(xl, sheet_name=s, nrows=40).astype(str)
+             content = " ".join(df_head.values.flatten()).upper()
+             if "(N)" in content and 'PP' in content and 'PSOE' in content:
+                  return s
+        except: continue
+    return None
+
+def normalize_name(val):
+    """Normalización de élite: robusta a ruido, mayúsculas y sufijos."""
+    if pd.isna(val): return ""
+    p = str(val).replace('*','').upper().strip()
+    
+    # Mapeo universal de keywords a claves de baseline
+    mappings = {
+        "PSOE": ["SOCIALISTA", "PSOE", "SÁNCHEZ", "PARTIDO SOCIALISTA"],
+        "PP": ["POPULAR", "PP", "FEIJOO", "FEIJÓO", "PARTIDO POPULAR"],
+        "VOX": ["VOX", "ABASCAL"],
+        "SUMAR": ["SUMAR", "MOVIMIENTO SUMAR", "YOLANDA", "IU", "IZQUIERDA UNIDA"],
+        "PODEMOS": ["PODEMOS", "BELARRA", "MONTERO"],
+        "SALF": ["FIESTA", "SALF", "ALVISE"],
+        "ERC": ["ERC", "ESQUERRA"],
+        "JUNTS": ["JUNTS", "PUIGDEMONT"],
+        "EH BILDU": ["BILDU", "OTEGI"],
+        "EAJ-PNV": ["PNV", "EAJ"],
+        "BNG": ["BNG", "GALEGO"],
+        "CC": ["CC", "CANARIA", "CCA"],
+        "UPN": ["UPN", "NAVARRA"],
+        "PACMA": ["PACMA"],
+        "CHA": ["CHA", "ARAGONESISTA"],
+        "TERUEL EXISTE": ["EXISTE", "TERUEL"],
+        "PAR": ["PAR", "ARAGONÉS"]
+    }
+    
+    for key, tokens in mappings.items():
+        if any(token in p for token in tokens): return key
         
-        # 3. Extracción de Datos Oficiales y Base de Intención
+    # Filtros de exclusión
+    exclude = ['TOTAL', 'SABE', 'CONTESTA', 'BLANCO', 'NULO', 'OTROS', 'MARGEN', 'INTERVALO', 'ESCAÑO', 'RESIDENTE']
+    if any(x in p for x in exclude) or len(p) < 2: return ""
+    
+    return p.split()[0]
+
+def analyze_cis_professional(file_path, study_type=None):
+    print(f"--- ANALISIS PROFESIONAL: {os.path.basename(file_path)} ---", flush=True)
+    
+    try:
+        xl = pd.ExcelFile(file_path)
+        meta = detect_ambito_y_ficha(xl)
         
-        # 3. Extracción de Datos Oficiales y Base de Intención
+        # Usar baselines OFICIALES verificados (Ministerio del Interior / Gobierno de Aragón)
+        voto_real_ref = get_baseline_results(meta["ambito"], meta.get("region"))
+        
+        # Localizar hoja de Recuerdo de Voto
+        rv_sheet = meta.get("rv_sheet") or find_rv_sheet(xl)
+        
+        print(f"  Ámbito: {meta['ambito']}, Región: {meta.get('region')}, RV: {rv_sheet}", flush=True)
+        print(f"  Baseline oficial: {list(voto_real_ref.keys())[:5]}...", flush=True)
+        
+        # Cargar hoja RV para uso posterior
+        df_rv = pd.read_excel(xl, sheet_name=rv_sheet) if rv_sheet else None
+
+        df_estim_official = None
+        df_raw_source = None
+        
+        # Búsqueda de Estimación Oficial
+        estim_sheet = next((s for s in xl.sheet_names if any(x in s.upper() for x in ['ESTIMACI', 'AVANCE', 'VOTO_EST'])), None)
+        if estim_sheet:
+            df_estim_official = pd.read_excel(xl, sheet_name=estim_sheet)
+            # Ampliar a 50 filas para archivos con notas metodológicas extensas
+            content = " ".join(df_estim_official.iloc[:50].astype(str).values.flatten()).upper()
+            if "VOTO DIRECTO" in content or "VOTO + SIMPATÍA" in content: 
+                df_raw_source = df_estim_official
+
+        # Si es Barómetro, PRIORIDAD ABSOLUTA al PDF para Oficial
+        if study_type == "BAROMETRO" and extract_official_data_from_pdf:
+            study_id = re.split(r'[_ -]', os.path.basename(file_path))[0]
+            # Buscar PDF en el mismo directorio
+            pdf_path = os.path.join(os.path.dirname(file_path), f"{study_id}_Estimacion.pdf")
+            # A. Extraer Estimación CIS (Niveles de Prioridad v6.0)
+        
+        # --- 2. EXTRACCIÓN DE DATOS CRUDA ---
         cis_oficial = {}
         voto_simp = {}
         
-        normalized_names = {
-            'CCA': 'CC', 'COALICIÓN CANARIA': 'CC',
-            'EAJ-PNV': 'EAJ-PNV', 'PNV': 'EAJ-PNV',
-            'EH BILDU': 'EH BILDU', 'BILDU': 'EH BILDU',
-            'SE ACABÓ LA FIESTA': 'SALF', 'SALF': 'SALF',
-            'PODEMOS': 'PODEMOS',
-            'SUMAR': 'SUMAR'
-        }
-
-        # --- Extract OFFICIAL Estimates ---
-        # Determinar columna de estimación según formato
-        is_new_simple_format = (estim_sheet_name == 'Estimación' and len(df_estim_official.columns) >= 5 if df_estim_official is not None else False)
+        # A. Extraer Estimación CIS (Niveles de Prioridad v6.2)
+        base_id = re.split(r'[_ -]', os.path.basename(file_path))[0]
+        pdf_variants = [f"{base_id}_Estimacion.pdf", f"{base_id}-Estimacion.pdf"]
         
-        if df_estim_official is not None:
-             print(f"DEBUG: Parsing Official Estimates (new_format={is_new_simple_format})...", flush=True)
-             # Determinar qué columna usar para el valor
-             if len(df_estim_official.columns) <= 2:
-                  val_col = 1
-             elif is_new_simple_format:
-                  val_col = 3  # Nuevo formato 3543: col 1 = Voto Directo, col 3 = Estimación CIS
-             else:
-                  val_col = 3  # Legacy Avance: col 3 tiene la estimación
-             
-             # Lista de términos a excluir (no son partidos)
-             exclude_terms = ['NAN', 'ABSTENCIÓN', 'NO SABE', 'NO CONTESTA', 'EN BLANCO', 
-                              'VOTO NULO', 'OTROS PARTIDOS', '(N)', 'TOTAL', 'MARGEN', 
-                              'ESTIMACIÓN', 'VOTO DIRECTO', 'INTERVALO', 'ESCAÑOS']
-             
-             for i in range(len(df_estim_official)):
-                  try:
-                       p_raw = str(df_estim_official.iloc[i, 0]).strip()
-                       val_raw = df_estim_official.iloc[i, val_col]
-                       
-                       # Verificar que es un partido válido (no nan, no excluido, tiene valor numérico)
-                       if pd.isna(val_raw) or p_raw == '' or p_raw.upper() == 'NAN':
-                            continue
-                       
-                       # Normalize Name
-                       p_norm = p_raw.replace('*','').upper().strip()
-                       
-                       # Verificar exclusiones
-                       if any(excl in p_norm for excl in exclude_terms):
-                            continue
-                       
-                       # Normalización de nombres conocidos
-                       if p_norm in normalized_names: p_key = normalized_names[p_norm]
-                       elif "FIESTA" in p_norm or 'SALF' in p_norm: p_key = 'SALF'
-                       elif 'IU-MOVIMIENTO' in p_norm or p_norm == 'IU-MOVIMIENTO SUMAR': p_key = 'SUMAR'
-                       elif 'PODEMOS' in p_norm: p_key = 'PODEMOS'
-                       else: p_key = p_norm
-                       
-                       # Solo guardar el PRIMER valor encontrado (evita que subcircunscripciones sobrescriban el total)
-                       if p_key not in cis_oficial:
-                            cis_oficial[p_key] = float(val_raw)
-                  except: pass
+        for pv in pdf_variants:
+             pdf_path = os.path.join(os.path.dirname(file_path), pv)
+             if os.path.exists(pdf_path) and extract_official_data_from_pdf:
+                  df_pdf = extract_official_data_from_pdf(pdf_path)
+                  if df_pdf is not None and len(df_pdf) > 0:
+                       # El PDF retorna DataFrame con ['Partido', 'Estimación']
+                       # Convertir directamente a diccionario (NO usar extract_from_dataframe)
+                       for _, row in df_pdf.iterrows():
+                            p_name = str(row.get('Partido', '')).upper().strip()
+                            p_key = normalize_name(p_name)
+                            val = try_float(row.get('Estimación', 0))
+                            if p_key and val:
+                                 cis_oficial[p_key] = val
+                       if cis_oficial:
+                            print(f"  PDF Official extraído: {list(cis_oficial.keys())[:5]}...", flush=True)
+                       break
 
-        # --- Extract RAW Vote+Simpathy ---
-        if df_estim_avance is not None:
-             # Legacy Avance: Col 1 is Voto+Simpatía
-             print(f"DEBUG: Parsing Voto+Simpatía from Avance...", flush=True)
-             for i in range(len(df_estim_avance)):
-                  try:
-                       p_raw = str(df_estim_avance.iloc[i, 0]).strip()
-                       val_raw = df_estim_avance.iloc[i, 1]
-                       
-                       # Verificar que es un partido válido
-                       if pd.isna(val_raw) or p_raw == '' or p_raw.upper() == 'NAN':
-                            continue
-                       
-                       p_norm = p_raw.replace('*','').upper().strip()
-                       
-                       # Verificar exclusiones
-                       exclude_terms = ['NAN', 'ABSTENCIÓN', 'NO SABE', 'NO CONTESTA', 'EN BLANCO', 
-                                        'VOTO NULO', 'OTROS PARTIDOS', '(N)', 'TOTAL']
-                       if any(excl in p_norm for excl in exclude_terms):
-                            continue
-                       
-                       # Normalización
-                       if p_norm in normalized_names: p_key = normalized_names[p_norm]
-                       elif "FIESTA" in p_norm or 'SALF' in p_norm: p_key = 'SALF'
-                       elif 'IU-MOVIMIENTO' in p_norm: p_key = 'SUMAR'
-                       elif 'PODEMOS' in p_norm: p_key = 'PODEMOS'
-                       else: p_key = p_norm
-                       
-                       # Solo guardar el PRIMER valor encontrado
-                       if p_key not in voto_simp:
-                            voto_simp[p_key] = float(val_raw)
-                  except: pass
-                  
-        elif df_resultados is not None:
-             # Tabulaciones: Search for "VOTO+SIMPATÍA"
-             print(f"DEBUG: Searching Voto+Simpatía in Resultados...", flush=True)
-             # Heuristic: Find row with "VOTO+SIMPATÍA"
-             # Then read subsequent rows until empty/nan
-             found_row = -1
-             for i in range(len(df_resultados)):
-                  row_str = str(df_resultados.iloc[i].values)
-                  if "VOTO+SIMPATÍA" in row_str.upper() or "INTENCIÓN DE VOTO" in row_str.upper():
-                       if "SIMPATÍA" in row_str.upper(): # Prefer Combined
-                            found_row = i
+        # Si no hay datos del PDF, intentar extraer del Excel
+        voto_directo_excel = {}
+        if not cis_oficial and df_estim_official is not None:
+             # Extraer AMBAS columnas: Voto Directo (col 1) y Estimación CIS (col 3)
+             extracted = extract_from_dataframe(df_estim_official, voto_real_ref)
+             if extracted:
+                  voto_directo_excel = extracted.get('voto_directo', {})
+                  cis_oficial = extracted.get('estimacion_cis', {})
+                  print(f"  Excel Voto Directo: {list(voto_directo_excel.keys())[:4]}...", flush=True)
+                  print(f"  Excel Estimación CIS: {list(cis_oficial.keys())[:4]}...", flush=True)
+             
+             # Fallback: Escanear todas las hojas si falla
+             if not cis_oficial:
+                  for sheet in xl.sheet_names:
+                       if sheet == estim_sheet: continue
+                       df_alt = pd.read_excel(xl, sheet_name=sheet)
+                       extracted = extract_from_dataframe(df_alt, voto_real_ref)
+                       if extracted.get('estimacion_cis'):
+                            voto_directo_excel = extracted.get('voto_directo', {})
+                            cis_oficial = extracted.get('estimacion_cis', {})
                             break
-             
-             if found_row != -1:
-                  print(f"DEBUG: Found Simpatía block at row {found_row}", flush=True)
-                  # Read next 15-20 rows
-                  # Expected Layout: Col 0 (Label) -> Col 1 (Total/Percent)
-                  # We need to inspect column 0 for Party Name and Column 1 for Value
-                  for j in range(found_row + 1, min(found_row + 40, len(df_resultados))):
-                       try:
-                            # Usually Party Name is in Col 0 or Col 1 depending on layout
-                            # In inspection: Col 0 was empty/NaN? No, Col 0 had text like "PSOE", "PP" 
-                            # Wait, inspection showed: "362 Me gustaría..." then "384 PSOE 23.3"
-                            # Let's assume Col 0 is Party, Col 1 is Value
-                            p_raw = str(df_resultados.iloc[j, 0]).strip()
-                            val_raw = df_resultados.iloc[j, 1]
-                            
-                            if pd.isna(df_resultados.iloc[j, 0]): continue # Skip empty labels
-                            
-                            p_norm = p_raw.replace('*','').upper()
-                            
-                            # Stop condition? (Ends with (N) or similar)
-                            if "(N)" in p_norm: break
-                            
-                            if p_norm in normalized_names: p_key = normalized_names[p_norm]
-                            elif p_norm in voto_real_23: p_key = p_norm
-                            elif "FIESTA" in p_norm: p_key = 'SALF'
-                            else: p_key = p_norm
-                            
-                            if p_key in voto_real_23 or p_key in ['SALF', 'PODEMOS']:
-                                 voto_simp[p_key] = float(val_raw)
-                       except: pass
-             else:
-                  print("WARNING: Could not find VOTO+SIMPATÍA block in Resultados.")
 
-        print(f"DEBUG: Voto+Simpatía -> {voto_simp}", flush=True)
-        
-        # 4. Extracción de Recuerdo de Voto (Dinámico)
-        # Buscar la fila que empieza por "(N)" en RV EG23
-        # Esta fila contiene los TOTALES de recuerdo (que es nuestra base para K)
-        
-        print("DEBUG: Parsing Recuerdo de Voto (Dynamic)...", flush=True)
-        recuerdo_enc = {}
-        
-        # Find the row with "(N)" in the first column
-        # Note: In loaded DF, "Unnamed: 0" might be checking Col 0
-        n_row_idx = -1
-        
-        # Check first 50 rows for "(N)"
-        for i in range(min(50, len(df_rv))):
-             val = str(df_rv.iloc[i, 0]).strip()
-             if val == "(N)":
-                  n_row_idx = i
-                  break
-        
-        # Fallback for Avance (Deep row?)
-        if n_row_idx == -1:
-             # Try legacy fixed index if not found (very unlikely in Avance, usually fixed)
-             # But let's search deeper if it's Avance
-             if len(df_rv) > 1000:
-                  for i in range(1000, len(df_rv)):
-                       val = str(df_rv.iloc[i, 0]).strip()
-                       if val == "(N)" or val == "TOTAL": # Avance sometimes uses Total?
-                            # Avance has a specific marginals structure. 
-                            # Let's keep the legacy map as a fallback if dynamic fails?
-                            pass
-                  # Legacy fallback
-                  idx_map_legacy = {
-                    'PP': 1785, 'PSOE': 1786, 'VOX': 1787, 'SUMAR': 1788,
-                    'ERC': 1789, 'JUNTS': 1790, 'EH BILDU': 1791, 'EAJ-PNV': 1792,
-                    'BNG': 1793, 'CC': 1794, 'UPN': 1795, 'PACMA': 1796
-                  }
-                  # Check if valid
-                  try:
-                       if df_rv.iloc[1785, 0] in ['PP', 'Partido Popular']: # Check label?
-                            pass
-                  except: pass
-        
-        if n_row_idx != -1:
-             print(f"DEBUG: Found Recuerdo (N) row at {n_row_idx}", flush=True)
-             # Now, we need to map Columns to Parties
-             # We need a Header Row to identify columns
-             # Header row is usually a few rows above (N)
-             # Look for 'PP', 'PSOE' in the rows above n_row
-             header_row_idx = -1
-             for i in range(max(0, n_row_idx - 10), n_row_idx):
-                  row_vals = [str(x).upper() for x in df_rv.iloc[i].values]
-                  if 'PP' in row_vals and 'PSOE' in row_vals:
-                       header_row_idx = i
+        # B. Extraer Intención de Voto desde hoja RV (Fuente unificada para Barómetros y Avances)
+        # La tabla RV tiene: fila con nombres de partidos (PP, PSOE...) y fila (N) con totales ABSOLUTOS
+        # Debemos convertir a PORCENTAJES dividiendo entre el total
+        if df_rv is not None and voto_simp == {}:
+             # Buscar fila con nombres de partidos
+             party_row = -1
+             for i in range(min(50, len(df_rv))):
+                  row_str = ' '.join([str(x).upper() for x in df_rv.iloc[i].values])
+                  if 'PP' in row_str and 'PSOE' in row_str and 'VOX' in row_str:
+                       party_row = i
                        break
              
-             if header_row_idx != -1:
-                  print(f"DEBUG: Found Header row at {header_row_idx}", flush=True)
-                  # Extract counts based on column headers
-                  headers = [str(x).strip().upper() for x in df_rv.iloc[header_row_idx].values]
-                  row_values = df_rv.iloc[n_row_idx].values
+             if party_row >= 0:
+                  # Mapear columnas a partidos
+                  party_cols = {}
+                  for col_idx, val in enumerate(df_rv.iloc[party_row].values):
+                       p_key = normalize_name(val)
+                       if p_key and len(p_key) > 1:
+                            party_cols[col_idx] = p_key
                   
-                  for col_idx, col_name in enumerate(headers):
-                       # Normalize Col Name
-                       if col_name in normalized_names: key = normalized_names[col_name]
-                       elif col_name in voto_real_23: key = col_name
-                       elif "FIESTA" in col_name: key = 'SALF'
-                       else: key = col_name
+                  # Buscar fila (N) con totales
+                  n_rows = df_rv[df_rv.iloc[:, 0].astype(str).str.contains(r"\(N\)", na=False, regex=True)].index
+                  if len(n_rows) > 0:
+                       n_idx = n_rows[0]
                        
-                       if key in voto_real_23:
-                            try:
-                                 recuerdo_enc[key] = float(row_values[col_idx])
-                            except: pass
-             else:
-                  print("WARNING: Could not find Header row for Recuerdo.")
-        else:
-             print("WARNING: Could not find (N) row for Recuerdo. Using default legacy map?")
-             # Use legacy map if safe
-             idx_map = {
-                'PP': 1785, 'PSOE': 1786, 'VOX': 1787, 'SUMAR': 1788,
-                'ERC': 1789, 'JUNTS': 1790, 'EH BILDU': 1791, 'EAJ-PNV': 1792,
-                'BNG': 1793, 'CC': 1794, 'UPN': 1795, 'PACMA': 1796
-             }
-             for p, idx in idx_map.items():
-                try:
-                    recuerdo_enc[p] = float(df_rv.iloc[idx, 1]) 
-                except:
-                    recuerdo_enc[p] = 1.0
+                       # Paso 1: Calcular TOTAL sumando todos los partidos relevantes
+                       total_abs = 0
+                       raw_values = {}
+                       for col_idx, p_key in party_cols.items():
+                            val = try_float(df_rv.iloc[n_idx, col_idx])
+                            if val and val > 0:
+                                 raw_values[p_key] = val
+                                 if p_key in voto_real_ref or p_key in ['SALF', 'PODEMOS']:
+                                      total_abs += val
+                       
+                       # Paso 2: Convertir a PORCENTAJES
+                       if total_abs > 0:
+                            for p_key, val in raw_values.items():
+                                 if p_key in voto_real_ref or p_key in ['SALF', 'PODEMOS']:
+                                      voto_simp[p_key] = (val / total_abs) * 100
 
-        print(f"DEBUG: Recuerdo -> {recuerdo_enc}", flush=True)
-        
-        # 5. Re-ponderación Aldabón-Gemini
-        # NUEVO CALCULO K (Normalizado al Voto Válido)
-        # 1. Sumar recuerdo total de partidos válidos (excluye No Votó, NR, NC, etc que no están en voto_real_23 keys)
-        sum_recuerdo_validos = sum([recuerdo_enc.get(p, 0) for p in voto_real_23])
-        print(f"DEBUG: Suma Recuerdo Válidos = {sum_recuerdo_validos}% (Se normalizará a 100%)", flush=True)
+        # 4. Extracción de Recuerdo de Voto (porcentajes, no absolutos)
+        recuerdo_enc = {}
+        if df_rv is not None:
+             # Buscar fila con nombres de partidos
+             party_row = -1
+             for i in range(min(50, len(df_rv))):
+                  row_str = ' '.join([str(x).upper() for x in df_rv.iloc[i].values])
+                  if 'PP' in row_str and 'PSOE' in row_str:
+                       party_row = i
+                       break
+             
+             if party_row >= 0:
+                  # Buscar fila de porcentajes (suele estar justo después de (N))
+                  n_rows = df_rv[df_rv.iloc[:, 0].astype(str).str.contains(r"\(N\)", na=False, regex=True)].index
+                  if len(n_rows) > 0:
+                       n_idx = n_rows[0]
+                       # Los porcentajes están en la fila (N) como proporción del total
+                       total = 0
+                       for col_idx, val in enumerate(df_rv.iloc[party_row].values):
+                            p_key = normalize_name(val)
+                            if p_key in voto_real_ref:
+                                 v = try_float(df_rv.iloc[n_idx, col_idx])
+                                 if v: total += v
+                       
+                       if total > 0:
+                            for col_idx, val in enumerate(df_rv.iloc[party_row].values):
+                                 p_key = normalize_name(val)
+                                 if p_key in voto_real_ref:
+                                      v = try_float(df_rv.iloc[n_idx, col_idx])
+                                      if v: recuerdo_enc[p_key] = (v / total) * 100
 
-        k = {}
-        for p in voto_real_23:
-            rec_raw = recuerdo_enc.get(p, 0.0)
-            if rec_raw > 0 and sum_recuerdo_validos > 0:
-                # Recuerdo Normalizado (Share sobre voto válido)
-                rec_norm = (rec_raw / sum_recuerdo_validos) * 100
-                # K = Real / Recuerdo_Norm
-                k[p] = voto_real_23[p] / rec_norm
-            else:
-                k[p] = 1.0
-        
-        # Matriz de ajuste de fidelidad (Transfer-based correction) - RECALIBRADO V7 (Final)
-        # Target: Derecha < 53% (OK en V6 con 52%), PSOE < 28% (V6 dio 28.2% -> Ajustar a la baja).
-        ajuste_fidelidad = {
-            'PSOE': 0.93,    # Bajamos de 0.95 -> 0.93 para asegurar sub-28%
-            'PP': 0.92,      # Mantenemos V6
-            'VOX': 0.82,     # Mantenemos V6
-            'SUMAR': 0.85,
-            'PODEMOS': 0.80,
-            'SALF': 1.05
-        }
+        # 5. Metodología Aldabón-Gemini (Solo si hay Recuerdo de Voto)
+        final = {}
+        if df_rv is not None:
+             sum_rec = sum([recuerdo_enc.get(p, 0) for p in voto_real_ref])
+             k_factors = {p: (voto_real_ref[p] / (recuerdo_enc.get(p, 0) / sum_rec * 100) if (sum_rec > 0 and recuerdo_enc.get(p, 0) > 0) else 1.0) for p in voto_real_ref}
 
-        # FACTOR DE LIDERAZGO / TENDENCIA (Criterio tipo 40dB)
-        # Ajuste fino V7
-        factor_liderazgo = {
-            'PSOE': 0.97,    # Bajamos de 0.98 -> 0.97
-            'PP': 0.96,
-            'SUMAR': 0.95,
-            'VOX': 0.95,
-            'SALF': 1.20,
-            'PODEMOS': 1.00
-        }
-        
-        estim_ajustada = {}
-        for p in voto_simp:
-            factor_k = k.get(p, 1.0) # Default K=1 for SALF/Podemos
-            
-            # Special case: PODEMOS uses SUMAR's K?
-            if p == 'PODEMOS':
-                factor_k = k.get('SUMAR', 1.0)
-                
-            fid = ajuste_fidelidad.get(p, 1.0)
-            lid = factor_liderazgo.get(p, 1.0)
-            
-            # Formula Multivariable: Base * K * Fidelidad * Liderazgo
-            estim_ajustada[p] = voto_simp[p] * factor_k * fid * lid
-            
-        total_aj = sum(estim_ajustada.values())
-        
-        # Calculate final % preserving the ratio
-        # Note: This normalizes only among THESE parties. Real normalization should include "Others".
-        # But commonly we just display valid vote estimate.
-        # CIS Official sums to ~95-98% (including blanco/others).
-        # We will re-normalize to match sum of Official for these parties? 
-        # Or better: Normalize to 100% excluding abstainers/others -> Estimated Vote.
-        
-        # Let's normalize based on the SUM of these parties in Official Estimate to align scales?
-        # sum_official = sum([cis_oficial.get(p,0) for p in estim_ajustada])
-        # scale_factor = sum_official / total_aj if total_aj > 0 else 1
-        # No, Aldabón method is absolute. Let's just normalize to 100% of "Valid Vote" if we have all parties.
-        # Since we have "Others"? No, we missed "Others".
-        
-        # Safer: Just output the raw adjusted number? No, must be %.
-        # Let's assume the sum of these parties + others = 100.
-        # We don't have "Others" estimate in our dict.
-        # Let's simple normalize to 100 * (Total_Aj / (Total_Aj + imputed_others?))
-        # Easier: Just use the raw adjusted sum as denominator? 
-        # If we only sum these, we inflate them.
-        # We need "Otros".
-        # Let's extract "Otro partido" or similar if possible.
-        # For now, let's just Normalize to 100 (which ignores Others -> slight inflation).
-        # Actually CIS "Estimación" table sums to ~100.
-        
-        final = {p: round(estim_ajustada[p] * 100 / max(total_aj, 1.0), 1) for p in estim_ajustada}
-        
-        # FIX: The normalization above inflates if we miss "Others".
-        # But we included almost everyone.
-        
-        # 6. Generar Excel de Auditoría Completo (Opcional/Debug)
-        try:
-            output_file = 'analisis_auditado_debug.xlsx'
-            with pd.ExcelWriter(output_file) as writer:
-                # Resumen Comparativo
-                res_comp = pd.DataFrame([
-                    {'Partido': p, 'CIS (Oficial)': cis_oficial.get(p), 'Aldabón-Gemini': final.get(p, 0), 'Diferencia': round(final.get(p,0)-cis_oficial.get(p,0),1)}
-                    for p in ['PP', 'PSOE', 'VOX', 'SUMAR']
-                ])
-                res_comp.to_excel(writer, sheet_name='Comparativa_Final', index=False)
-                
-                # Detalle Técnico
-                detalle = pd.DataFrame([
-                    {
-                        'Partido': p, 
-                        'Real_2023': voto_real_23.get(p, 0), 
-                        'Recuerdo_CIS': recuerdo_enc.get(p, 0), 
-                        'K_Ponderacion': round(k.get(p, 1), 3),
-                        'Voto_Simpatia_CIS': voto_simp.get(p, 0),
-                        'Ajuste_Fidelidad': ajuste_fidelidad.get(p, 1),
-                        'Final_%': final.get(p, 0)
-                    } for p in voto_real_23
-                ])
-                detalle.to_excel(writer, sheet_name='Detalle_Calculos', index=False)
-        except Exception as e:
-            print(f"INFO: No se pudo generar el Excel de auditoría (normal en Streamlit Cloud): {e}", flush=True)
+             ajustes = {'PSOE': 0.94, 'PP': 0.93, 'VOX': 0.85, 'SUMAR': 0.88, 'PODEMOS': 0.82, 'SALF': 1.10}
+             estim_aj = {}
+             for p in voto_simp:
+                  k = k_factors.get(p, 1.0)
+                  if p == 'PODEMOS' and 'SUMAR' in k_factors: k = k_factors['SUMAR']
+                  estim_aj[p] = voto_simp[p] * k * ajustes.get(p, 1.0)
 
-        # Return data for integration
+             total = sum(estim_aj.values())
+             final = {p: round(v * 100 / total, 1) for p, v in estim_aj.items()} if total > 0 else {}
+
+        # Usar voto_directo_excel si está disponible, sino usar voto_simp
+        raw_to_use = voto_directo_excel if voto_directo_excel else {p: round(voto_simp.get(p,0), 1) for p in (final if final else cis_oficial)}
+        
         return {
-            'benedicto': final,
-            'official': cis_oficial,
-            'raw': {p: round(voto_simp.get(p,0),1) for p in final}, # Approx raw from IDV+Sympathy
-            'meta': {'file': file_path, 'note': 'Analisis V7 Estricto'}
+            'benedicto': final, 
+            'official': cis_oficial,  # Estimación CIS (col 3) = Alamino-Tezanos
+            'raw': raw_to_use,        # Voto Directo (col 1) = Voto Directo en encuesta
+            'meta': meta
         }
-
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"Error Crítico en analyze_cis_professional: {e}", flush=True)
-        return None
+        print(f"Error Crítico: {e}"); return None
+
+def extract_from_dataframe(df, voto_real_ref):
+    """Extrae Voto Directo (col 1) y Estimación CIS (col 3) de la hoja de Estimación."""
+    try:
+        voto_directo = {}
+        estimacion_cis = {}
+        
+        # Lista de partidos a buscar
+        search_list = list(voto_real_ref.keys()) + ['SALF', 'PODEMOS', 'SE ACABÓ', 'TERUEL EXISTE', 'IU-MOVIMIENTO SUMAR', 'PODEMOS-AV']
+        
+        for i in range(min(100, len(df))):
+            row = df.iloc[i]
+            p_name = str(row.iloc[0]).upper().strip() if pd.notna(row.iloc[0]) else ""
+            p_key = normalize_name(p_name)
+            
+            if p_key and (p_key in search_list or any(s in p_name for s in ['PP', 'PSOE', 'VOX', 'CHA', 'SUMAR', 'PODEMOS', 'TERUEL', 'PAR'])):
+                # Normalizar nombre de partido
+                if 'SUMAR' in p_name: p_key = 'SUMAR'
+                elif 'PODEMOS' in p_name: p_key = 'PODEMOS'
+                elif 'TERUEL' in p_name: p_key = 'TERUEL EXISTE'
+                elif 'PP' == p_name: p_key = 'PP'
+                elif 'PSOE' == p_name: p_key = 'PSOE'
+                elif 'VOX' == p_name: p_key = 'VOX'
+                elif 'CHA' == p_name: p_key = 'CHA'
+                elif 'PAR' == p_name: p_key = 'PAR'
+                
+                # Col 1 = Voto Directo en la encuesta
+                val_vd = try_float(row.iloc[1]) if len(row) > 1 else None
+                
+                # REFUERZO 3543: Si no hay valor en col 1, mirar la siguiente fila (algunos Avances tienen saltos)
+                if val_vd is None and i + 1 < len(df):
+                    next_row = df.iloc[i+1]
+                    # Solo tomar si col 0 está vacía en la siguiente fila (indica continuación)
+                    if pd.isna(next_row.iloc[0]) or str(next_row.iloc[0]).strip() == "":
+                        val_vd = try_float(next_row.iloc[1]) if len(next_row) > 1 else None
+
+                if val_vd and 0.1 <= val_vd <= 65:
+                    if p_key not in voto_directo:
+                        voto_directo[p_key] = val_vd
+                
+                # Col 3 = Estimación CIS (Alamino-Tezanos)
+                val_est = try_float(row.iloc[3]) if len(row) > 3 else None
+                
+                # REFUERZO 3543: Mirar también la siguiente fila para la estimación si es necesario
+                if val_est is None and i + 1 < len(df):
+                    next_row = df.iloc[i+1]
+                    if pd.isna(next_row.iloc[0]) or str(next_row.iloc[0]).strip() == "":
+                        val_est = try_float(next_row.iloc[3]) if len(next_row) > 3 else None
+
+                if val_est and 0.1 <= val_est <= 65:
+                    if p_key not in estimacion_cis:
+                        estimacion_cis[p_key] = val_est
+            
+            # REFUERZO 3543: Si ya tenemos los principales y llegamos a una zona de corte (como el inicio de otra provincia)
+            # detectada por una celda que contiene 'N=' o similar, podríamos parar.
+            # Pero más simple: no sobreescribir si ya tenemos un valor para ese partido.
+            # Así la primera tabla (el total de la comunidad) manda.
+
+        # Retornar ambos en formato compatible (estimacion_cis como default para compatibilidad)
+        return {'voto_directo': voto_directo, 'estimacion_cis': estimacion_cis, **estimacion_cis}
+    except Exception as e:
+        print(f"Error extracción: {e}", flush=True)
+        return {}
+
+def try_float(val):
+    try:
+        if isinstance(val, str): 
+             val = val.replace('%', '').replace(',', '.').strip()
+             if '±' in val or '-' in val or '–' in val: return None
+        v_f = float(val)
+        return v_f if not pd.isna(v_f) else None
+    except: return None
 
 if __name__ == "__main__":
-    analyze_cis_professional('3540_avance.xlsx')
+    pass

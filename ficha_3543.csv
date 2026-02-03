@@ -1,0 +1,29 @@
+Unnamed: 0,Unnamed: 1
+,3543/0 PREELECTORAL ELECCIONES AUTONÓMICAS 2026. COMUNIDAD AUTÓNOMA DE ARAGÓN
+,AVANCE DE RESULTADOS
+,FICHA TÉCNICA DEL ESTUDIO
+,
+FICHA TÉCNICA,
+,
+Ámbito,Aragón   (aut.).
+Universo,Población española con derecho a voto en elecciones autonómicas y residente en la comunidad autónoma de ambos sexos de 18 y más años.
+Tamaño de la muestra:,
+Diseñada,3.300 entrevistas.
+Realizada,3.313 entrevistas.
+Afijación,No proporcional
+,"Se ajusta el diseño no proporcional de forma que se asignan 1.100 entrevistas a la provincia de Huesca, 800 entrevistas a Teruel y 1.400 entrevistas a Zaragoza._x000D_
+_x000D_
+Luego se realiza un diseño proporcional en las cuotas de tamaño de municipio, sexo y edad."
+Ponderación,"Para tratar la muestra en su conjunto es necesario aplicar coeficientes de ponderación (PESO). Los valores medios de estos coeficientes se adjuntan en la ficha técnica._x000D_
+_x000D_
+Para el cálculo de la ponderación nacional PESO se introducen en el procedimiento iterativo variables mínimas como sexo, edad, región NUTS II (regiones básicas definidas por la nomenclatura de unidades territoriales para estadísticas de EUROSTAT), nivel educativo (utilizando la clasificación de programas, titulaciones y certificaciones en niveles de formación alcanzados (CNED-A)) y tamaño de la localidad. Esta ponderación post estratificación también se conoce como 'ponderación de corrección' o 'de no respuesta total’._x000D_
+_x000D_
+Para la estimación a nivel de cada provincia, en el fichero de microdatos se incluye la ponderación para cada una de ellas (variable PESOPROV)."
+Puntos de muestreo,401 municipios y 3 provincias
+Procedimiento de muestreo,"Se ha procedido a la selección aleatoria de teléfonos fijos y móviles con un porcentaje del 14,9% y del 85,1%, respectivamente. La selección de los individuos se ha llevado a cabo mediante la aplicación de cuotas de sexo y edad._x000D_
+_x000D_
+Los estratos se han formado por el cruce de las 2 provincias con el tamaño de hábitat, dividido en 7 categorías: menor o igual a 2.000 habitantes; de 2.001 a 10.000; de 10.001 a 50.000; de 50.001 a 100.000; de 100.001 a 400.000; de 400.001 a 1.000.000; y más de 1.000.000 de habitantes._x000D_
+_x000D_
+Los cuestionarios se han aplicado mediante entrevista telefónica asistida por ordenador (CATI)"
+Error muestral,"Para un nivel de confianza del 95,5% (dos sigmas), y P = Q, el error de muestreo es de ±1,7% para el conjunto de la muestra y en el supuesto de muestreo aleatorio simple."
+Fecha de realización,Del 12 al 15 de enero de 2026.

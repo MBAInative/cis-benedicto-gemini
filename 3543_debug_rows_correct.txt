@@ -1,0 +1,40 @@
+﻿0 nan
+1 nan
+2 nan
+3 nan
+4 Pregunta A1
+5 Sexo:
+6 nan
+7 nan
+8 Hombre
+9 Mujer
+10 (N)
+11 nan
+12 nan
+13 Pregunta A2
+14 ┐QuÚ edad tiene Ud.?
+15 nan
+16 nan
+17 De 18 a 24 a±os
+18 De 25 a 34 a±os
+19 De 35 a 44 a±os
+20 De 45 a 54 a±os
+21 De 55 a 64 a±os
+22 De 65 a 74 a±os
+23 75 y mßs a±os
+24 (N)
+25 nan
+26 nan
+27 Pregunta 0a
+28 A continuaci¾n quisiera preguntarle si tiene Ud....
+29 nan
+30 nan
+31 La nacionalidad espa±ola
+32 La nacionalidad espa±ola y otra
+33 (N)
+34 nan
+35 nan
+36 Pregunta 0b
+37 ┐Y tiene Ud. la nacionalidad espa±ola desde que naci¾ o la ha adquirido con posterioridad?
+38 nan
+39 nan

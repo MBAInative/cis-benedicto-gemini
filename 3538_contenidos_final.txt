@@ -1,0 +1,18 @@
+﻿├ìNDICE DE CONTENIDOS
+Ôÿ× Ficha t├®cnica
+Ôÿ× Tabla ponderaciones
+Ôÿ× Notas
+Ôÿ× Resultados
+Ôÿ× Resultados Badajoz
+Ôÿ× Resultados C├íceres
+Ôÿ× Sexo
+Ôÿ× Edad
+Ôÿ× Nivel de estudios
+Ôÿ× Tama├▒o de municipio
+Ôÿ× RV EA23
+Ôÿ× RV EG23
+Ôÿ× Ocupaci├│n
+Ôÿ× Clase social
+Ôÿ× Escala de ideolog├¡a
+Ôÿ× Estimaci├│n de Voto
+

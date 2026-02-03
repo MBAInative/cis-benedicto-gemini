@@ -1,62 +1,51 @@
-# 🦅 Monitor CIS Aldabón-Gemini
+# CIS Monitor - Guía Técnica de Implementación
 
-## 🎯 Objetivo del Proyecto
-Esta herramienta es un **sistema de auditoría y rectificación demoscópica** diseñado para analizar los estudios del CIS (Centro de Investigaciones Sociológicas) bajo una metodología alternativa a la oficial ("Alaminos-Tezanos").
+Este documento resume el conocimiento técnico acumulado sobre la estructura de los datos del CIS para facilitar el mantenimiento y evolución del proyecto.
 
-El objetivo principal es corregir los sesgos sistemáticos utilizando un modelo de post-estratificación basado en el **Recuerdo de Voto Real**.
+## 1. Tipos de Estudios y Estructura de Archivos
 
----
+| Tipo de Estudio | Fuente de Datos | Característica Principal |
+| :--- | :--- | :--- |
+| **Barómetro Nacional** | Excel + PDF externo | La estimación suele estar solo en el PDF (columna "voto válido"). |
+| **Avance Generales** | Excel | Todo está en el Excel (Hoja "Estimación de Voto" o "Resultados"). |
+| **Avance Autonómico** | Excel | Detectado por la presencia de la hoja "RV EA23" y menciones en la ficha técnica. |
 
-## 🛠️ Arquitectura Técnica
+## 2. Estructura de las Hojas de Excel
 
-### Componentes Principales
-1.  **`streamlit_app.py`**: Interfaz de usuario dinámica y visualización.
-2.  **`cis_analyzer.py`**: Motor lógico con el algoritmo Aldabón-Gemini v2.2.
-    *   **Universalidad:** Soporta barómetros nacionales y preelectorales autonómicos.
-    *   **Robustez:** Maneja variaciones en los formatos de Excel del CIS (nombres de hojas, estructuras de tablas).
-3.  **`cis_data_manager.py`**: Gestión de rutas y mapeo de estudios históricos.
+### Ficha Técnica
+*   **Referencia**: Buscada por patrón regex `35\d{2}`.
+*   **Campo (Fechas)**: Patrón regex para rangos "Del X al Y de Mes".
+*   **Ámbito**: Detectado analizando el texto (Nacional, Aragón, Extremadura).
 
----
+### Hojas de Resultados (Especialidad Autonómica)
+En estudios autonómicos (ej. 3538), no existe hoja de "Estimación". Se usa la hoja `Resultados [Comunidad]`.
+*   **Voto Directo**: Extraído de la pregunta de intención de voto espontánea (ej. P11R). **CRÍTICO**: Excluir tablas marcadas como "RECODIFICADA" o "SIMPATÍA" para obtener el voto crudo del boletín.
+*   **Estimación**: Si existe, suele estar en una columna lateral (Col 3) de la tabla recodificada por simpatía.
 
-## 🧮 Metodología Aldabón-Gemini
+### Hoja Estimación de Voto (Nacionales)
+*   **Columna 0**: Nombre del partido o categoría (Blank, Nulo, etc.).
+*   **Columna 1**: Voto Directo (Crudo sobre censo).
+*   **Columna 3**: Estimación CIS (Sobre voto válido).
 
-El modelo aplica una rectificación profesional basada en el comportamiento electoral histórico:
+## 3. Lógica de "Cocina" Aldabón
 
-1.  **Factor Detector de Mentiras ($K$):** Ajusta la muestra según la desviación entre el recuerdo de voto declarado y los resultados reales del 23J.
-    $$ K = \frac{\% \text{Voto Real}}{\% \text{Recuerdo Normalizado}} $$
-2.  **Ajuste por Fidelidad y Liderazgo:** Aplica matrices de transferencia basadas en la solidez estructural de cada electorado.
-3.  **Extracción Multi-Nivel:** Capacidad de distinguir entre datos agregados (CCAA Total) y desgloses provinciales en el mismo archivo.
+### Diferenciación Gemini vs Claude
+*   **Aldabón-Gemini**: `Estimación = VD * K * Ajuste_Fidelidad`.
+*   **Aldabón-Claude**: `Estimación = VD * K` (Factor K puro).
 
----
+### Factor K (Corrección de Sesgo)
+`K = Voto_Real_Referencia / Recuerdo_Encuesta`
+*   Corrige el sesgo de memoria de los encuestados.
+*   Si el PP tuvo 33% real pero solo 25% de los encuestados dicen haberle votado, K = 1.32.
 
-## 🏛️ Soporte de Estudios Autonómicos y Metadatos
+### Normalización Crítica
+Para que las estimaciones sean realistas:
+1.  Se aplica la fórmula a cada partido.
+2.  **IMPORTANTE**: Se excluyen categorías de no-voto (NS, NC, Abstención) antes de normalizar.
+3.  Se redistribuyen los valores para que el sumatorio de **Partidos Políticos** sea exactamente **100%**.
 
-El sistema maneja la complejidad de los estudios regionales e incluye metadatos detallados para cada sondeo:
+## 4. Notas para Futuros Desarrolladores
 
-*   **Identificación Automática:** Extrae partidos regionales (CHA, PAR, TERUEL EXISTE) y normaliza coaliciones.
-*   **Tratamiento de Datos:** Prioriza tablas agregadas (Total CCAA) sobre desgloses provinciales.
-*   **Panel de Información:** El panel lateral muestra ahora datos críticos de la ficha técnica:
-    *   **Referencia Electoral:** (Generales / Autonómicas).
-    *   **Muestra (N):** Tamaño de la muestra (ej: 3.313 entrevistas).
-    *   **Trabajo de Campo:** Fechas exactas del sondeo.
-
----
-
-## 🛠️ Notas de Estabilidad y Despliegue (Cloud)
-
-Para asegurar el funcionamiento en **Streamlit Cloud (Debian/Linux)**, se han implementado las siguientes mejoras de robustez:
-
-1.  **Compatibilidad de Encoding:** Eliminados hacks de consola dependientes de Windows que bloqueaban el arranque en Linux.
-2.  **Gestión de Permisos:** La creación de directorios temporales y archivos de auditoría está protegida para entornos con sistemas de archivos de solo lectura.
-3.  **Depuración de Dependencias:** `requirements.txt` optimizado con versiones específicas y librerías necesarias para el renderizado de tablas (`jinja2`).
-4.  **Blindaje de Arranque:** Sistema de diagnóstico integrado que captura y muestra errores de importación detallados en lugar de fallos genéricos.
-
----
-
-## 🚀 Despliegue y Uso
-*   **Local:** `streamlit run streamlit_app.py`
-*   **Cloud:** Despliegue automático en Streamlit Cloud vía GitHub.
-*   **Datos:** Los estudios deben colocarse en `data/cis_studies/` siguiendo la nomenclatura `ID-multi_A.xlsx`.
-
----
-*Documento actualizado: 23 de Enero de 2026*
+*   **Regex de PDF**: El CIS cambia a veces el formato. Los patrones deben ser flexibles para saltar el margen de error `±X.X`.
+*   **Simpatía vs Intención**: En el Voto Directo mostrado al usuario, siempre priorizar la intención espontánea. La simpatía es parte de la "cocina".
+*   **Partidos Locales**: El mapeo en `_normalizar_partido` debe actualizarse con cada nueva comunidad (ej. variantes de Podemos/IU en Extremadura).

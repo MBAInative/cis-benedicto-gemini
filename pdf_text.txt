@@ -1,0 +1,216 @@
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ESTIMACIÓN DE VOTO 
+Estudio nº 3538 
+PREELECTORAL ELECCIONES AUTONÓMICAS 2025. 
+COMUNIDAD AUTÓNOMA DE EXTREMADURA 
+ 
+CIS 
+Estudio nº 3538 Preelectoral Elecciones Autonómicas 2025.  ESTIMACIÓN DE VOTO 
+Comunidad autónoma de Extremadura 
+ 
+ 
+ 
+NOTA METODOLÓGICA 
+ 
+Ficha técnica estimación ‘Preelectoral elecciones autonómicas 2025. Comunidad autónoma de Extremadura ’ 
+E3538 
+El Centro de Investigaciones Sociológicas aplica desde hace años una metodología de estimación de apoyo electoral 
+basada en la especificación de escenarios. Una medición por escenarios que no posee intención prospectiva y se 
+encuentra referida al periodo d e recolección de los datos. Desde inicios de 2019 1 se procede a una sistematización 
+teórica y metodológica de los modelos dando lugar a una ampliación del número y diversidad de escenarios con la 
+finalidad de ampliar el rango de configuraciones posibles. En una situación con una volatilidad elevada de aparición y 
+desaparición de organizaciones políticas es conveniente conocer las probabilidades de realización empírica 
+(estimación) de cada una de ellas en diferentes presupuestos. El resultado de dicha labor desarrolla teórica y 
+empíricamente el “modelo bidimensional inercia-incertidumbre Alaminos-Tezanos” 2 que se utiliza como referencia de 
+medición de apoyo electoral estructural (coyuntural) a partidos políticos.  
+ 
+El CIS pone a disposición sus matrices de datos con los microdatos en abierto de todos los estudios que realiza. De 
+esta manera, cualquiera puede aplicar sus propios modelos para el cálculo de estimaciones de voto, modelos que 
+pueden dar lugar a estimaciones diferentes a las del CIS.  
+ 
+Una información más detallada de los análisis efectuados para la estimación electoral de este estudio puede 
+consultarse en el documento ‘Informe técnico de la estimación del Estudio 3538 ‘Preelectoral elecciones autonómicas 
+2025. Comunidad autónoma de Extremadura’. Puede accederse a él a través de este enlace 
+https://www.cis.es/es/estudios/preguntas-frecuentes/informes-tecnicos 
+ 
+Ficha técnica 
+ 
+Datos: encuesta de opinión pública. ‘Preelectoral elecciones autonómicas 2025. Comunidad autónoma de Extremadura’ 
+ES3538 
+Fuente: Centro de Investigaciones Sociológicas 
+Objetivo: medición de la probabilidad de apoyo electoral a partidos políticos  
+Temporalidad: sincrónica estructural 
+Método: escenarios  
+Modelo: modelo bidimensional inercia-incertidumbre Alaminos-Tezanos 
+ 
+ 
+1 Departamento de Investigación (2019a). Nota metodológica de las elecciones de abril de 2019. Madrid: CIS.  
+Departamento de Investigación (2019b). Nota metodológica de las elecciones de noviembre de 2019. Madrid: CIS.  
+2 La lógica del modelo bidimensional inercia-incertidumbre Alaminos-Tezanos, así como la diferencia entre métodos de medición 
+y métodos prospectivos se desarrolla más ampliamente en Alaminos, A (2022) El método de escenarios en la estimación de 
+resultados electorales. Una aplicación al caso de Castilla y León. Revista Española de Investigaciones Sociológicas . Número 178. 
+Páginas 173-182. Alaminos, A. y Alaminos -Fernández A.F. (2023) Modelo Bifactorial Inercia- Incertidumbre Alaminos-Tezanos. 
+Aplicación al diagnóstico preelectoral y evaluación del impacto de campaña. Centro de Investigaciones Sociológicas. Cuadernos 
+metodológicos, 63. 
+CIS 
+Estudio nº 3538 Preelectoral Elecciones Autonómicas 2025.  ESTIMACIÓN DE VOTO 
+Comunidad autónoma de Extremadura 
+ 
+ 
+ 
+ 
+ COMUNIDAD AUTÓNOMA DE EXTREMADURA. N=2.037 
+ 
+Voto directo 
+en la 
+encuesta  
+(en % sobre 
+censo) 
+Margen 
+teórico 
+de error* 
+Estimación 
+(en % 
+sobre el 
+voto 
+válido) 
+Intervalo de 
+la 
+estimación 
+(en %) 
+Intervalo de 
+escaños 
+PP 30,9 ±2,0 38,5 35,6 – 41,9 25 – 29 
+PSOE 24 ±1,9 31,6 28,7 – 34,4 19 – 22 
+VOX 14,2 ±1,5 17,3 15,1 – 18,6 10 – 12  
+Podemos-IU-AV 8 ±1,2 9,6 8,3 – 10,8 6 – 7 
+JUNTOS-
+LEVANTA 0,6 ±0,3 0,8 0,4 – 1,5 - 
+Otros partidos 1,6 ±0,5 1,8 1,1 – 3,7 - 
+En blanco 1,4 ±0,5 0,4 0,3 – 1,2 - 
+Voto Nulo 0,8 ±0,4    
+Abstención 
+(“No votaría”) 2,6 ±0,7    
+No sabe 14,3 ±1,5    
+No contesta 1,6 ±0,5     
+ 
+Como consecuencia del efecto de redondeo del segundo decimal el sumatorio puede no ser exactamente 100. 
+ 
+* Intervalo de confianza (95%). 
+ 
+  
+CIS 
+Estudio nº 3538 Preelectoral Elecciones Autonómicas 2025.  ESTIMACIÓN DE VOTO 
+Comunidad autónoma de Extremadura 
+ 
+ 
+ 
+ 
+ BADAJOZ. N=1.215 
+ 
+Voto directo 
+en la 
+encuesta  
+(en % sobre 
+censo) 
+Margen 
+teórico 
+ de error* 
+Estimación 
+(en % 
+sobre el 
+voto 
+válido) 
+Intervalo de 
+la 
+estimación 
+(en %) 
+Escaños 
+PP 31,7 ±2,6 39,4 36,8 – 41,9 15 
+PSOE 23,7 ±2,4 30 28,2 – 31,8 11 
+VOX 13,6 ±1,9 15,5 14,4 – 16,8 6  
+Podemos-IU-AV 8,9 ±1,6 11,4 11 – 12,1 4 
+JUNTOS-
+LEVANTA 0,7 ±0,5 0,9 0,5 – 1,1 - 
+Otros partidos 1,7 ±0,7 2,3 1,2 – 3,7 - 
+En blanco 1 ±0,6 0,6 0,3 – 1,1 - 
+Voto Nulo 0,7 ±0,5    
+Abstención 
+(“No votaría”) 2,6 ±0,9    
+No sabe 14 ±2,0    
+No contesta 1,3 ±0,6     
+ 
+ 
+Como consecuencia del efecto de redondeo del segundo decimal el sumatorio puede no ser exactamente 100. 
+ 
+* Intervalo de confianza (95%). 
+ 
+  
+CIS 
+Estudio nº 3538 Preelectoral Elecciones Autonómicas 2025.  ESTIMACIÓN DE VOTO 
+Comunidad autónoma de Extremadura 
+ 
+ 
+ 
+ 
+ CÁCERES N=822 
+ 
+Voto directo 
+en la 
+encuesta  
+(en % sobre 
+censo) 
+Margen 
+teórico 
+ de error* 
+Estimación 
+(en % 
+sobre el 
+voto 
+válido) 
+Intervalo de 
+la 
+estimación 
+(en %) 
+Escaños 
+PP 30 ±3,1 38,5 36,3 – 42,3 12 
+PSOE 23,7 ±2,9 30 26,5 – 32,6 9 
+VOX 15,3 ±2,5 19 16,9 – 21,6 6  
+Podemos-IU-AV 6,7 ±1,7 8,6 7,6 – 9,4 2 
+JUNTOS-
+LEVANTA 0,4 ±0,4 0,9 0,5 – 1,8 - 
+Otros partidos 1,1 ±0,7 2,2 1,2 – 4,8 - 
+En blanco 2,4 ±1,0 0,8 0,2 – 1,5 - 
+Voto Nulo 1 ±0,7    
+Abstención 
+(“No votaría”) 2,6 ±1,1    
+No sabe 14,8 ±2,4    
+No contesta 2 ±1,0     
+ 
+Como consecuencia del efecto de redondeo del segundo decimal el sumatorio puede no ser exactamente 100. 
+ 
+* Intervalo de confianza (95%). 
+ 

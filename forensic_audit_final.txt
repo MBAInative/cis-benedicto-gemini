@@ -1,0 +1,49 @@
+
+============================================================
+FORENSIC DUMP: data/cis_studies\3540_multi.xlsx (BAROMETRO)
+============================================================
+--- HEAD OF ESTIMACION (Nota estimación) ---
+   Unnamed: 0                            Unnamed: 1
+0         NaN        3540/0 BARÓMETRO DE ENERO 2026
+1         NaN                  AVANCE DE RESULTADOS
+2         NaN  NOTA METODOLÓGICA ESTIMACIÓN DE VOTO
+
+============================================================
+FORENSIC DUMP: data/cis_studies\3536_multi.xlsx (AVANCE)
+============================================================
+FILE NOT FOUND
+
+============================================================
+FORENSIC DUMP: data/cis_studies\3536-multi.xlsx (AVANCE)
+============================================================
+
+============================================================
+FORENSIC DUMP: data/cis_studies\3543_multi_A.xlsx (AVANCE)
+============================================================
+--- HEAD OF ESTIMACION (Estimación) ---
+                                                                       Unnamed: 0                            Unnamed: 1      Unnamed: 2                              Unnamed: 3                         Unnamed: 4            Unnamed: 5
+0   3543/0 PREELECTORAL ELECCIONES AUTONÓMICAS 2026. COMUNIDAD AUTÓNOMA DE ARAGÓN                                   NaN             NaN                                     NaN                                NaN                   NaN
+1                                                                             NaN                  AVANCE DE RESULTADOS             NaN                                     NaN                                NaN                   NaN
+2                                                                             NaN                    ESTIMACIÓN DE VOTO             NaN                                     NaN                                NaN                   NaN
+3                                                                             NaN                                   NaN             NaN                                     NaN                                NaN                   NaN
+4                                                                             NaN                                   NaN             NaN                                     NaN                                NaN                   NaN
+5                                                                             NaN  COMUNIDAD AUTÓNOMA DE ARAGON. N=3313             NaN                                     NaN                                NaN                   NaN
+6                                                                             NaN          Voto directo en la encuesta   Margen teórico  Estimación (en % sobre el voto válido)  Intervalo de la estimación (en %)  Intervalo de escaños
+7                                                                             NaN                    (en % sobre censo)       de error*                                     NaN                                NaN                   NaN
+8                                                                              PP                                  27.8            ±1,5                                    35.3                        34,5 – 36,7                25– 29
+9                                                                            PSOE                                  21.5            ±1,4                                    26.7                        23,3 – 29,1               17 – 23
+10                                                                            VOX                                    12            ±1,1                                    15.1                        14,3 – 17,1              10 – 13 
+11                                                                            CHA                                   5.4            ±0,8                                     6.9                          6,0 – 7,7                 3 – 5
+12                                                            IU-MOVIMIENTO SUMAR                                   NaN            ±0,6                                       5                          3,9 – 5,8                 1 – 3
+13                                                                            NaN                                   3.5             NaN                                     NaN                                NaN                   NaN
+14                                                                     PODEMOS-AV                                   1.8            ±0,5                                     2.5                          2,2 – 2,8                 0 – 1
+15                                                                  TERUEL EXISTE                                   1.6            ±0,4                                     2.2                          1,9 – 2,8                 1 – 2
+16                                                                           SALF                                   1.6            ±0,4                                       2                          1,9 – 2,2                     -
+17                                                                            PAR                                   1.1            ±0,4                                     1.5                          1,3 – 1,9                     -
+18                                                                 Otros partidos                                   1.2            ±0,4                                     2.3                          1,1 – 3,6                     -
+19                                                                      En blanco                                   1.6            ±0,4                                     0.5                          0,4 – 0,7                     -
+
+============================================================
+FORENSIC DUMP: data/cis_studies\3543-multi_A.xlsx (AVANCE)
+============================================================
+FILE NOT FOUND

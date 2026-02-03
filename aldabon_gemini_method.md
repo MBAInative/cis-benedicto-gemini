@@ -27,3 +27,19 @@ Nuestro método utiliza una **Post-estratificación por Recuerdo de Voto Real**.
 - **Neutralidad**: No asume comportamientos futuros basados en ideología.
 - **Transparencia**: El script de Python adjunto permite replicar el cálculo con cualquier Barómetro.
 - **Vínculo con la Realidad**: El punto de anclaje siempre es el último resultado electoral verificado (Julio 2023).
+
+## 4. Complejidad y Adaptabilidad Técnica
+El método Aldabón-Gemini está diseñado para ser resiliente a las variaciones estructurales de los datos del CIS:
+
+### A. Diferenciación de Ámbito (General vs. Autonómica)
+Cada estudio requiere un "punto de anclaje" diferente. 
+- **Nacional**: Se utiliza como baseline los resultados de las Generales de Julio 2023.
+- **Autonómica**: El sistema detecta el ámbito en la **Ficha Técnica** y emplea los resultados de las últimas autonómicas regionales (ej. Aragón 2023) para el cálculo de fidelidades y factor $k$.
+
+### B. Formato de Ingesta (Barómetro vs. Avance)
+La ubicación de la "Estimación Oficial" varía:
+- **Avance de Barómetro**: La estimación se encuentra integrada en el mismo archivo Excel (normalmente en la hoja 'Estimación de Voto').
+- **Barómetro Completo**: La estimación se publica en un **PDF independiente**. El sistema Aldabón-Gemini integra un motor OCR/Regex para extraer estos datos y permitir la comparativa automática.
+
+---
+*Este documento refleja el estado del arte de la implementación v3.0 adaptable.*

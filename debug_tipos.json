@@ -1,0 +1,128 @@
+{
+  "3524_multi_A.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_rv": "RV EG23",
+    "ficha_tipo": "AvanceGenerales",
+    "ficha_ref": "3524/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "SUMAR",
+      "ERC",
+      "JUNTS"
+    ],
+    "fidelidad_pp": 0.92,
+    "fidelidad_psoe": 0.93,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  },
+  "3528_multi_A.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_rv": "RV EG23",
+    "ficha_tipo": "AvanceGenerales",
+    "ficha_ref": "3528/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "SUMAR",
+      "ERC",
+      "JUNTS"
+    ],
+    "fidelidad_pp": 0.92,
+    "fidelidad_psoe": 0.93,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  },
+  "3530_multi_A.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_rv": "RV EG23",
+    "ficha_tipo": "AvanceGenerales",
+    "ficha_ref": "3530/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "SUMAR",
+      "ERC",
+      "JUNTS"
+    ],
+    "fidelidad_pp": 0.92,
+    "fidelidad_psoe": 0.93,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  },
+  "3536-multi.xlsx": {
+    "tipo_clase": "BarometroNacional",
+    "hoja_rv": "RV EG23",
+    "ficha_tipo": "BarometroNacional",
+    "ficha_ref": "3536/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "SUMAR",
+      "ERC",
+      "JUNTS"
+    ],
+    "fidelidad_pp": 0.92,
+    "fidelidad_psoe": 0.93,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  },
+  "3538_multi.xlsx": {
+    "tipo_clase": "AvanceAutonomicas",
+    "hoja_rv": "RV EA23",
+    "ficha_tipo": "AvanceAutonomicas",
+    "ficha_ref": "3538/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "PODEMOS",
+      "SUMAR",
+      "En Blanco"
+    ],
+    "fidelidad_pp": 0.92,
+    "fidelidad_psoe": 0.93,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  },
+  "3540_multi.xlsx": {
+    "tipo_clase": "AvanceGenerales",
+    "hoja_rv": "RV EG23",
+    "ficha_tipo": "AvanceGenerales",
+    "ficha_ref": "3540/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "SUMAR",
+      "ERC",
+      "JUNTS"
+    ],
+    "fidelidad_pp": 0.92,
+    "fidelidad_psoe": 0.93,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  },
+  "3543-multi_A.xlsx": {
+    "tipo_clase": "AvanceAutonomicas",
+    "hoja_rv": "RV EA23",
+    "ficha_tipo": "AvanceAutonomicas",
+    "ficha_ref": "3543/0",
+    "partidos_ref": [
+      "PP",
+      "PSOE",
+      "VOX",
+      "CHA",
+      "PAR",
+      "SUMAR"
+    ],
+    "fidelidad_pp": 0.78,
+    "fidelidad_psoe": 0.59,
+    "momentum_pp": 1.02,
+    "momentum_psoe": 0.97
+  }
+}

@@ -1,0 +1,22 @@
+﻿ALDABËN-GEMINI 2.3: INFERENCE REPORT
+========================================
+
+ESTUDIO: 3543 (Arag¾n)
+  Ruralidad: 35.59%
+  Polarizaci¾n: 31.30%
+  Diagn¾stico: Clima: Urbano/Moderado. Polarizaci¾n: Baja.
+  Error: 'Inferencia TÚcnica'
+
+ESTUDIO: 3538 (Extremadura)
+  Ruralidad: 59.32%
+  Polarizaci¾n: 35.86%
+  Diagn¾stico: Clima: Rural. Polarizaci¾n: Baja.
+  Error: 'Inferencia TÚcnica'
+
+ESTUDIO: 3536 (Nacional)
+  Ruralidad: 23.22%
+  Polarizaci¾n: 35.49%
+  Diagn¾stico: Clima: Urbano/Moderado. Polarizaci¾n: Baja.
+  Error: 'Inferencia TÚcnica'
+
+========================================

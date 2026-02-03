@@ -1,0 +1,31 @@
+﻿ALDABËN-GEMINI 2.3: INFERENCE REPORT
+========================================
+
+ESTUDIO: 3543 (Arag¾n)
+  Ruralidad: 35.59%
+  Polarizaci¾n: 31.30%
+  Diagn¾stico: Clima: Urbano/Moderado. Polarizaci¾n: Baja.
+  TÚcnico: Detecci¾n de 35.6% peso rural y 31.3% polarizaci¾n. Coeficientes auto-calibrados.
+  Fid. PSOE: 0.93
+  Fid. PP: 1.05
+  Fid. VOX: 1.15
+
+ESTUDIO: 3538 (Extremadura)
+  Ruralidad: 59.32%
+  Polarizaci¾n: 35.86%
+  Diagn¾stico: Clima: Rural. Polarizaci¾n: Baja.
+  TÚcnico: Detecci¾n de 59.3% peso rural y 35.9% polarizaci¾n. Coeficientes auto-calibrados.
+  Fid. PSOE: 1.0
+  Fid. PP: 1.05
+  Fid. VOX: 1.15
+
+ESTUDIO: 3536 (Nacional)
+  Ruralidad: 23.22%
+  Polarizaci¾n: 35.49%
+  Diagn¾stico: Clima: Urbano/Moderado. Polarizaci¾n: Baja.
+  TÚcnico: Detecci¾n de 23.2% peso rural y 35.5% polarizaci¾n. Coeficientes auto-calibrados.
+  Fid. PSOE: 0.85
+  Fid. PP: 1.05
+  Fid. VOX: 1.15
+
+========================================

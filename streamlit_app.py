@@ -23,8 +23,7 @@ st.title("⚖️ CIS Monitor: Comparativa de Métodos de Cocina Electoral")
 st.markdown("""
 - **Voto Directo**: Intención de voto espontánea (incluye indecisos y abstención cruda)
 - **Estimación CIS**: Método Alamino-Tezanos (oficial del CIS sobre voto válido)
-- **Aldabón-Gemini**: Factor K (Recuerdo) + Ajustes de Fidelidad Histórica
-- **Aldabón-Claude**: Factor K Puro (Corrección por sesgo de memoria sin aditivos)
+- **Aldabón-Gemini 3.0**: Factor K × Φ (Fidelidad) × Λ (Momentum)
 """)
 
 # --- SIDEBAR: SELECTOR Y SUBIDA ---
@@ -44,6 +43,8 @@ if existing_files:
     file_path = os.path.join(DATA_DIR, selected_file)
 else:
     st.sidebar.warning("No hay estudios disponibles")
+    file_path = None
+
     file_path = None
 
 st.sidebar.markdown("---")
@@ -86,21 +87,38 @@ if file_path and os.path.exists(file_path):
 
         st.sidebar.write(f"**Hoja RV:** {estudio.get_hoja_rv()}")
         
-        # Extraer datos
+        # --- DEBUG CONFIG ---
+        with st.sidebar.expander("⚙️ Configuración del Modelo", expanded=True):
+            if st.button("🧹 Limpiar Caché y Recargar"):
+                st.cache_data.clear()
+                st.rerun()
+            
+            try:
+                config = estudio.get_context_biases()
+                st.markdown("**Fidelidad Actual (Φ):**")
+                st.code(f"PP:   {config['fidelidad']['PP']}\nPSOE: {config['fidelidad']['PSOE']}")
+            except:
+                pass
+        
+        # Obtener valores por defecto de momentum
+        default_momentum = estudio.get_context_biases()['momentum']
+        
+        # Extraer datos base
         voto_directo = estudio.extraer_voto_directo()
+        recuerdo = estudio.extraer_recuerdo_voto()
         estimacion_cis = estudio.extraer_estimacion_cis()
-        aldabon_gemini = estudio.calcular_aldabon_gemini()
-        aldabon_claude = estudio.calcular_aldabon_claude()
+        # Calcular primero con valores por defecto para determinar partidos
+        aldabon_gemini_default = estudio.calcular_aldabon_gemini()
         
         # Determinar partidos a mostrar
         all_parties = set()
-        for d in [voto_directo, estimacion_cis, aldabon_gemini, aldabon_claude]:
+        for d in [voto_directo, estimacion_cis, aldabon_gemini_default]:
             all_parties.update(d.keys())
         
         # Filtrar partidos con valores > 0.5%
         # Partidos principales (excluyendo categorías técnicas para el orden base)
         main_parties = sorted([p for p in all_parties 
-                         if any(d.get(p, 0) > 0.5 for d in [voto_directo, estimacion_cis, aldabon_gemini, aldabon_claude])
+                         if any(d.get(p, 0) > 0.5 for d in [voto_directo, estimacion_cis, aldabon_gemini_default])
                          and p not in ['No Sabe', 'No Contesta', 'Abstención', 'En Blanco', 'Voto Nulo']],
                         key=lambda x: -voto_directo.get(x, 0))
         
@@ -115,6 +133,45 @@ if file_path and os.path.exists(file_path):
         cats_estimacion = main_parties + voto_tecnico
         
         if parties:
+            # --- PANEL DE AJUSTE DE MOMENTUM ---
+            st.subheader("🎚️ Ajuste de Momentum (Λ)")
+            st.caption("Modifica el factor de coyuntura para cada partido. Valores < 1.0 = Desgaste | > 1.0 = Impulso")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                lam_psoe = st.number_input(
+                    "PSOE", min_value=0.50, max_value=1.50, 
+                    value=default_momentum.get('PSOE', 1.0), step=0.01, format="%.2f",
+                    key="lam_psoe"
+                )
+            with col2:
+                lam_pp = st.number_input(
+                    "PP", min_value=0.50, max_value=1.50,
+                    value=default_momentum.get('PP', 1.0), step=0.01, format="%.2f",
+                    key="lam_pp"
+                )
+            with col3:
+                lam_vox = st.number_input(
+                    "VOX", min_value=0.50, max_value=1.50,
+                    value=default_momentum.get('VOX', 1.0), step=0.01, format="%.2f",
+                    key="lam_vox"
+                )
+            with col4:
+                lam_salf = st.number_input(
+                    "SALF", min_value=0.50, max_value=1.50,
+                    value=default_momentum.get('SALF', 1.0), step=0.01, format="%.2f",
+                    key="lam_salf"
+                )
+            
+            # Calcular Aldabón-Gemini con momentum ajustado
+            custom_momentum = {'PSOE': lam_psoe, 'PP': lam_pp, 'VOX': lam_vox, 'SALF': lam_salf}
+            aldabon_gemini = estudio.calcular_aldabon_gemini(custom_momentum=custom_momentum)
+            
+            # Mostrar valores de momentum aplicados
+            st.info(f"**Λ aplicados:** PSOE={lam_psoe:.2f} | PP={lam_pp:.2f} | VOX={lam_vox:.2f} | SALF={lam_salf:.2f}")
+            
+            st.markdown("---")
+            
             # --- TABLA COMPARATIVA ---
             st.subheader("📊 Tabla Comparativa de Métodos")
             
@@ -123,7 +180,6 @@ if file_path and os.path.exists(file_path):
                 'Voto Directo (Crudo)': [voto_directo.get(p, 0) for p in parties],
                 'Estimación CIS': [estimacion_cis.get(p, 0) if p in cats_estimacion else 0 for p in parties],
                 'Aldabón-Gemini': [aldabon_gemini.get(p, 0) if p in cats_estimacion else 0 for p in parties],
-                'Aldabón-Claude': [aldabon_claude.get(p, 0) if p in cats_estimacion else 0 for p in parties],
             }
             
             df = pd.DataFrame(table_data)
@@ -140,7 +196,6 @@ if file_path and os.path.exists(file_path):
                     'Voto Directo (Crudo)': '{:.1f}%',
                     'Estimación CIS': '{:.1f}%',
                     'Aldabón-Gemini': '{:.1f}%',
-                    'Aldabón-Claude': '{:.1f}%',
                     'Diff (Gemini - CIS)': '{:+.1f}%'
                 }).applymap(
                     lambda v: 'color: green' if v > 0 else 'color: red' if v < 0 else '',
@@ -152,13 +207,12 @@ if file_path and os.path.exists(file_path):
             # --- GRÁFICO DE BARRAS ---
             st.subheader("📈 Comparativa Visual")
             
-            # Preparar datos para gráfico
+            # Preparar datos para gráfico (usa aldabon_gemini ya calculado con momentum ajustado)
             chart_data = []
             for p in parties[:10]:  # Top 10 partidos
                 chart_data.append({'Partido': p, 'Método': 'Voto Directo', 'Valor': voto_directo.get(p, 0)})
                 chart_data.append({'Partido': p, 'Método': 'Estimación CIS', 'Valor': estimacion_cis.get(p, 0)})
                 chart_data.append({'Partido': p, 'Método': 'Aldabón-Gemini', 'Valor': aldabon_gemini.get(p, 0)})
-                chart_data.append({'Partido': p, 'Método': 'Aldabón-Claude', 'Valor': aldabon_claude.get(p, 0)})
             
             chart_df = pd.DataFrame(chart_data)
             
@@ -173,7 +227,7 @@ if file_path and os.path.exists(file_path):
             st.altair_chart(chart, use_container_width=True)
             
             # --- EXPLICACIÓN DE MÉTODOS ---
-            with st.expander("🎓 Explicación de los Métodos (Aldabón-Gemini 2.6)"):
+            with st.expander("🎓 Explicación de los Métodos", expanded=False):
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -185,71 +239,130 @@ if file_path and os.path.exists(file_path):
                     """)
                     
                     st.markdown("""
-                    ### Método Aldabón-Gemini (v2.6)
-                    - **Inference Engine**: Detecta automáticamente ruralidad y polarización del estudio.
-                    - **Recall Bias Sensor**: Detecta si la muestra está "inflada" con votantes de un bloque.
-                    - **Protección de Suelo**: Nunca estima por debajo del **90% del Voto Directo** declarado.
-                    """)
-                
-                with col2:
-                    st.markdown("""
                     ### Voto Directo (Crudo)
                     - Es la intención de voto declarada por el ciudadano en la encuesta.
                     - Representa el **"suelo de realidad"** del que parte el modelo.
                     - No incluye corrección técnica por mentira o falta de recuerdo.
                     """)
-                    
+                
+                with col2:
                     st.markdown("""
-                    ### Método Aldabón-Claude
-                    - **K-Factor Amortiguado (0.40)**: Equilibra recuerdo e intención actual.
-                    - **Modelo Estático**: No aplica penalizaciones por sesgo de muestra.
-                    - La predicción más conservadora basada estrictamente en la declaración.
+                    ### Método Aldabón-Gemini 3.0
+                    - **Fórmula**: $E_p = S_p \\times K_p \\times \\Phi_p \\times \\Lambda_p$
+                    - **K (Factor de Corrección)**: Corrige el sesgo de recuerdo de voto.
+                    - **Φ (Fidelidad)**: Tasa de retención estructural histórica.
+                    - **Λ (Momentum)**: Parámetro SUBJETIVO ajustable por el usuario.
+                    - **Protección de Suelo**: Nunca estima por debajo del **100% del VD**.
                     """)
             
             # --- GUÍA DIDÁCTICA: FÓRMULAS ---
-            with st.expander("📐 Explicación Técnica de las Fórmulas (Aldabón-Gemini 2.6)", expanded=False):
+            with st.expander("📐 Explicación Técnica de las Fórmulas (Aldabón-Gemini 3.0)", expanded=False):
                 st.markdown("""
-                ## ¿Cómo se "cocina" una encuesta? (Nivel Bachillerato)
+                ## 1. Definición de Variables Base
                 
-                Para que veas cómo funciona la cocina, vamos a usar los mismos datos para los tres modelos con el **"Partido de la Esperanza" (PE)**:
-                
-                *   **Voto Directo (VD)**: **20%** (lo que dicen hoy).
-                *   **Recuerdo de Voto (RV)**: **25%** (lo que dicen que votaron en 2023).
-                *   **Voto Real 2023 (VR)**: **20%** (lo que votaron de verdad).
-                *   **Indecisos (ID)**: **15%**.
-                
-                ---
-                
-                ### 1. Modelo Alamino-Tezanos (CIS)
-                **Lógica**: Suma los indecisos según su simpatía.
-                *   **Paso 1**: Mira a los indecisos (15%) y ve que 1 de cada 3 (33%) simpatiza con el PE.
-                *   **Paso 2 (Cálculo)**: $20\\% (VD) + (15\\% (ID) \\times 0.33) = 20\\% + 5\\%$
-                *   **Resultado Final**: **25.0%**
-                *   *¿Qué ha pasado?*: El modelo ha "rescatado" a los indecisos y los ha sumado al partido.
+                | Variable | Nombre | Descripción |
+                |:--|:--|:--|
+                | $V_p$ | **Voto Real 23J** | Porcentaje real obtenido por el partido $p$ en las Elecciones Generales de Julio 2023 sobre el censo de voto válido. |
+                | $R_{raw}$ | **Recuerdo Bruto** | Porcentaje de encuestados en el CIS actual que declaran haber votado a $p$ en 2023. |
+                | $S_p$ | **Voto+Simpatía** | Intención directa declarada o simpatía explícita hacia el partido $p$ en la encuesta actual. |
                 
                 ---
                 
-                ### 2. Modelo Aldabón-Claude (Matemático)
-                **Lógica**: Corrige el error de memoria usando el **Factor K**.
-                *   **Paso 1 (Error de Memoria)**: La gente dice que votó 25% pero fue un 20%. El error es $20 / 25 = 0.8$.
-                *   **Paso 2 (Amortiguación)**: No aplicamos el error a lo bruto, usamos un factor de 0.40.
-                    $K = 1 + (0.8 - 1) \\times 0.40 = 1 - 0.08 = 0.92$.
-                *   **Paso 3 (Cálculo)**: $20\\% (VD) \\times 0.92 = 18.4\\%$.
-                *   **Resultado Final**: **18.4%**
-                *   *¿Qué ha pasado?*: Al detectar que la muestra estaba "inflada" de ex-votantes de ese partido, ha bajado la estimación para ser realistas.
+                ## 2. Algoritmo de Rectificación Aldabón-Gemini
+                
+                El modelo aplica una función de transformación lineal sobre la intención directa, calibrada por tres factores.
+                
+                ### A. Normalización del Recuerdo ($R_{norm}$)
+                Primero normalizamos el recuerdo bruto eliminando No contesta / No sabe para operar sobre Voto Válido Equivalente:
+                
+                $$R_{norm,p} = \\frac{R_{raw,p}}{\\sum_{i \\in Partidos} R_{raw,i}} \\times 100$$
+                
+                ### B. Cálculo del Factor de Corrección ($K_p$)
+                Este coeficiente mide la sobredimensionamiento (autocomplacencia) o infra-representación (voto oculto) de cada electorado en la muestra.
+                
+                $$K_p = \\frac{V_p}{R_{norm,p}}$$
+                
+                - Si $K_p > 1$: Detectamos **Voto Oculto** (ej. PP/VOX suelen tener $K \\approx 1.3 - 1.6$).
+                - Si $K_p < 1$: Detectamos **Sobrerrepresentación** (ej. PSOE suele tener $K \\approx 0.8 - 0.9$).
+                
+                **Nota:** El factor K se aplica al 100% (sin amortiguación).
+                
+                ### C. Matriz de Ajuste Fino ($\\Phi_p$ y $\\Lambda_p$)
+                Aplicamos correcciones basadas en fidelidad histórica y momentum actual.
+                
+                | Factor | Descripción | Valores por Defecto |
+                |:--|:--|:--|
+                | **Φ (Fidelidad)** | Tasa de retención estructural. | $\\Phi = 1.0$ (neutro) |
+                | **Λ (Momentum)** | Factor de coyuntura (ajustable por usuario). | $\\Lambda = 1.0$ (neutro) |
                 
                 ---
                 
-                ### 3. Modelo Aldabón-Gemini 2.6 (Inteligente)
-                **Lógica**: Usa el Factor K + Sensor de Sesgo + Suelo de Protección.
-                *   **Paso 1 (Capa Base)**: Parte del cálculo de Claude ($18.4\\%$).
-                *   **Paso 2 (Sensor de Sesgo)**: Como el sesgo de recuerdo es alto ($25/20 = 1.25$), Gemini sospecha desmovilización y aplica una penalización de fidelidad del 3% ($0.97$).
-                    $18.4\\% \\times 0.97 = 17.85\\%$.
-                *   **Paso 3 (Protección de Suelo)**: Gemini mira el Voto Directo (20%) y aplica la regla del 90%.
-                    $Suelo = 20\\% \\times 0.90 = 18.0\\%$.
-                *   **Paso 4 (Comparación)**: Como $17.85\\%$ es menor que el suelo ($18.0\\%$), el modelo **protege el voto confesado**.
-                *   **Resultado Final**: **18.0%**
-                *   *¿Qué ha pasado?*: Gemini detectó el sesgo pero, por sentido común sociológico, no permitió que el partido bajara de su suelo de realidad.
+                ## 3. Fórmula Final de Estimación
+                
+                La estimación final $E_p$ se calcula proyectando la intención directa corregida por el sesgo muestral y ajustada por los factores de fidelidad y coyuntura:
+                
+                $$E_p = S_p \\times K_p \\times \\Phi_p \\times \\Lambda_p$$
+                
+                *Nota: El resultado se re-normaliza finalmente para asegurar que $\\sum E_p = 100\\%$.*
+                
+                ---
+                
+                ## 4. Ejemplo Práctico Comparativo
+                """)
+                
+                # Generar ejemplo dinámico con datos reales del estudio
+                partido_ejemplo = 'PP'
+                if partido_ejemplo not in voto_directo:
+                    partido_ejemplo = list(voto_directo.keys())[0] if voto_directo else 'PP'
+                
+                # Extraer datos reales
+                vd_real = voto_directo.get(partido_ejemplo, 0)
+                rec_real = recuerdo.get(partido_ejemplo, 0) if recuerdo else 0
+                cis_real = estimacion_cis.get(partido_ejemplo, 0)
+                gemini_real = aldabon_gemini.get(partido_ejemplo, 0)
+                
+                # Obtener parámetros usados
+                config = estudio.get_context_biases()
+                phi_real = config['fidelidad'].get(partido_ejemplo, 1.0)
+                lam_real = custom_momentum.get(partido_ejemplo, config['momentum'].get(partido_ejemplo, 1.0))
+                
+                # Calcular K (sin amortiguación)
+                partidos_ref = estudio.get_partidos_referencia()
+                v_real = partidos_ref.get(partido_ejemplo, 0)
+                sum_rec = sum(recuerdo.values()) if recuerdo else 1
+                rec_norm = (rec_real / sum_rec) * 100 if sum_rec > 0 else 0
+                k_val = v_real / rec_norm if rec_norm > 0 else 1.0
+                
+                # Calcular valores intermedios
+                e_raw = vd_real * k_val * phi_real * lam_real
+                suelo = vd_real  # 100% del VD como suelo
+                
+                st.markdown(f"""
+                Datos reales del **{partido_ejemplo}** en este estudio:
+                
+                | Dato | Valor |
+                |:--|:--|
+                | Voto Directo ($S_p$) | {vd_real:.1f}% |
+                | Recuerdo Bruto ($R_{{raw}}$) | {rec_real:.1f} (→ {rec_norm:.1f}% normalizado) |
+                | Voto Real 2023 ($V_p$) | {v_real:.1f}% |
+                | Estimación CIS | {cis_real:.1f}% |
+                
+                ### Cálculo Aldabón-Gemini 3.0
+                
+                1. **Factor K**: $K = {v_real:.1f}/{rec_norm:.1f} = {k_val:.2f}$ (aplicado al 100%)
+                2. **Fidelidad**: $\\Phi_{{{partido_ejemplo}}} = {phi_real}$
+                3. **Momentum**: $\\Lambda_{{{partido_ejemplo}}} = {lam_real:.2f}$ {"(slider ajustado)" if lam_real != config['momentum'].get(partido_ejemplo, 1.0) else "(valor por defecto)"}
+                4. **Cálculo bruto**: $E = {vd_real:.1f}\\% \\times {k_val:.2f} \\times {phi_real} \\times {lam_real:.2f} = {e_raw:.1f}\\%$
+                5. **Protección Suelo**: $Suelo = {vd_real:.1f}\\%$ (100% del VD)
+                6. **Aplicación**: {"Se aplica suelo" if e_raw < suelo else "Se usa valor calculado"} ({max(suelo, e_raw):.1f}%)
+                7. **Normalización**: Se ajusta al 100% sobre voto válido (excluyendo Abstención/NSNC).
+                
+                $$E_{{Final}} = {max(suelo, e_raw):.1f}\\% \\xrightarrow{{Normalización}} \\mathbf{{{gemini_real:.1f}\\%}}$$
+                
+                | Método | Estimación | Diferencia vs VD |
+                |:--|:--|:--|
+                | CIS | {cis_real:.1f}% | {cis_real - vd_real:+.1f}% |
+                | Aldabón-Gemini | {gemini_real:.1f}% | {gemini_real - vd_real:+.1f}% |
                 """)
         else:
             st.warning("No se encontraron datos de partidos en este estudio.")

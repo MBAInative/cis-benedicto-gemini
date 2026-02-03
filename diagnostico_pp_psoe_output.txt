@@ -1,0 +1,65 @@
+﻿====================================================================================================
+DIAGNËSTICO: Comparaci¾n PP vs PSOE en estudios CIS
+====================================================================================================
+
+====================================================================================================
+ESTUDIOS DE ELECCIONES GENERALES
+====================================================================================================
+
+--- 3524_multi_A.xlsx (AvanceGenerales) ---
+  Voto Directo:     PP=16.4%  PSOE=23.7%  (PSOE/PP ratio: 1.45)
+  Recuerdo Norm:    PP=24.9%  PSOE=38.4%
+  Referencia 2023:  PP=33.1%  PSOE=31.7%
+  Factor K:         PP=1.131  PSOE=0.93
+  Fidelidad (Phi):  PP=0.98  PSOE=0.8
+  Momentum (Lam):   PP=1.02  PSOE=0.97
+python : Traceback 
+(most recent call 
+last):
+En línea: 1 
+Carácter: 1
++ python diagnostico
+_pp_psoe.py 2>&1 | 
+Out-File -FilePath 
+diagnostico_p ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Trac   
+ eback (most rec    
+ent call last):    
+:String) [], Re    
+moteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+  File "C:\Users\lbt
+00\OneDrive\Document
+os\Proyectos\CIS\dia
+gnostico_pp_psoe.py"
+, line 109, in 
+<module>
+    print(f"  Base 
+(VDÎKÎ\u03a6):    PP
+={result['pp_base']}
+  PSOE={result['psoe
+_base']}")
+  File "C:\Users\lbt
+00\AppData\Local\Pro
+grams\Python\Python3
+9\lib\encodings\cp12
+52.py", line 19, in 
+encode
+    return codecs.ch
+armap_encode(input,s
+elf.errors,encoding_
+table)[0]
+UnicodeEncodeError: 
+'charmap' codec 
+can't encode 
+character '\u03a6' 
+in position 13: 
+character maps to 
+<undefined>

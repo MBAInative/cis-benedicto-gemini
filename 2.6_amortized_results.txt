@@ -1,0 +1,34 @@
+﻿ALDABËN-GEMINI 2.5: CALIBRATION VERIFICATION
+========================================
+
+ESTUDIO: 3543 (Arag¾n)
+  Diagn¾stico: Clima: Urbano/Moderado. Polarizaci¾n: Baja.
+  Sesgo: Recall PSOE: Inflado (x1.35). Representatividad correcta de la derecha.
+  --- Fidelidades ---
+  PSOE: 0.79 | PP: 1.05 | VOX: 1.1
+  --- Estimaci¾n Final ---
+  PSOE: 24.8% (Objetivo Real: ~26%)
+  PP: 37.4% (Objetivo Real: ~39-43%)
+  VOX: 17.0% (Objetivo Real: ~11-16%)
+
+ESTUDIO: 3538 (Extremadura)
+  Diagn¾stico: Clima: Rural. Polarizaci¾n: Baja.
+  Sesgo: Recall PSOE: Normal. Representatividad correcta de la derecha.
+  --- Fidelidades ---
+  PSOE: 0.98 | PP: 1.05 | VOX: 1.1
+  --- Estimaci¾n Final ---
+  PSOE: 28.7% (Objetivo Real: ~26%)
+  PP: 39.9% (Objetivo Real: ~39-43%)
+  VOX: 16.1% (Objetivo Real: ~11-16%)
+
+ESTUDIO: 3536 (Nacional)
+  Diagn¾stico: Clima: Urbano/Moderado. Polarizaci¾n: Baja.
+  Sesgo: Recall PSOE: Inflado (x1.24). Voto oculto VOX detectado (+0.05).
+  --- Fidelidades ---
+  PSOE: 0.82 | PP: 1.05 | VOX: 1.15
+  --- Estimaci¾n Final ---
+  PSOE: 26.2% (Objetivo Real: ~26%)
+  PP: 23.0% (Objetivo Real: ~39-43%)
+  VOX: 19.3% (Objetivo Real: ~11-16%)
+
+========================================

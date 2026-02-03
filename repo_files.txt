@@ -1,0 +1,10 @@
+﻿data/cis_studies/3450_avance.xlsx
+data/cis_studies/3457_avance.xlsx
+data/cis_studies/3468_avance.xlsx
+data/cis_studies/3524-multi_A.xlsx
+data/cis_studies/3528-multi_A.xlsx
+data/cis_studies/3530-multi_A.xlsx
+data/cis_studies/3536_Estimacion.pdf
+data/cis_studies/3536_multi.xlsx
+data/cis_studies/3540_multi.xlsx
+data/cis_studies/3543-multi_A.xlsx

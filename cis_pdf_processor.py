@@ -23,38 +23,38 @@ def extract_official_data_from_pdf(pdf_path):
     
     data = {}
     
-    # Common parties to look for
+    # Common parties to look for with more robust tokens
     parties = {
         'PSOE': r'PSOE.*?(\d+[\.,]\d+)',
         'PP': r'PP.*?(\d+[\.,]\d+)',
         'VOX': r'VOX.*?(\d+[\.,]\d+)',
         'Sumar': r'Sumar.*?(\d+[\.,]\d+)',
         'Podemos': r'Podemos.*?(\d+[\.,]\d+)',
-        'SALF': r'Se Acabó la Fiesta.*?(\d+[\.,]\d+)',
+        'Se Acabó la Fiesta': r'(Se Acabó la Fiesta|SALF).*?(\d+[\.,]\d+)',
         'ERC': r'ERC.*?(\d+[\.,]\d+)',
-        'Junts': r'Junts.*?(\d+[\.,]\d+)',
+        'Junts': r'(Junts per Catalunya|Junts).*?(\d+[\.,]\d+)',
         'EH Bildu': r'Bildu.*?(\d+[\.,]\d+)',
-        'PNV': r'PNV.*?(\d+[\.,]\d+)',
+        'EAJ-PNV': r'(EAJ-PNV|PNV).*?(\d+[\.,]\d+)',
         'BNG': r'BNG.*?(\d+[\.,]\d+)',
-        'CCa': r'Coalición Canaria.*?(\d+[\.,]\d+)',
+        'CCa': r'(Coalición Canaria|CCa).*?(\d+[\.,]\d+)',
         'UPN': r'UPN.*?(\d+[\.,]\d+)',
         'PACMA': r'PACMA.*?(\d+[\.,]\d+)',
     }
 
-    # Focus on the 'Estimación de Voto' section if possible
-    # This is a simple heuristic: find the block of text containing "Estimación de Voto" and "válido"
-    # But for now, let's just grep the first occurrence of each party's percentage 
-    # appearing after the phrase "Estimación de Voto"
-    
-    start_marker = "Estimación de Voto"
-    start_idx = text.find(start_marker)
+    # Focus on the 'Estimación de Voto' section
+    # Search for "Estimación de voto" or "Estimación en porcentaje"
+    start_marker = "Estimación de voto"
+    start_idx = text.lower().find(start_marker)
     
     if start_idx == -1:
-        print("Warning: 'Estimación de Voto' section not found explicitly. Searching entire text.")
+        start_idx = text.lower().find("estimación en porcentaje")
+        
+    if start_idx == -1:
+        print("Warning: Estimation section not found. Searching entire text.")
         search_text = text
     else:
-        # Search in the 2000 chars after the marker
-        search_text = text[start_idx:start_idx+3000]
+        # Search in the 4000 chars after the marker to ensure we cover the whole table
+        search_text = text[start_idx:start_idx+4000]
 
     print(f"Searching in text segment: {search_text[:200]}...")
 

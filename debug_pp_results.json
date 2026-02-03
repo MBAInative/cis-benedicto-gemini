@@ -1,0 +1,158 @@
+{
+  "3524_multi_A.xlsx": {
+    "voto_directo": {
+      "PP": 16.4,
+      "PSOE": 23.7,
+      "VOX": 12.8,
+      "SUMAR": 5.6
+    },
+    "recuerdo": {
+      "PP": 24.91765181241971,
+      "PSOE": 38.40613004144192,
+      "VOX": 12.612433492813862,
+      "SUMAR": 13.688236921783872
+    },
+    "estimacion_cis": {
+      "PP": 23.7,
+      "PSOE": 32.7,
+      "VOX": 17.3,
+      "SUMAR": 7.9
+    },
+    "aldabon_gemini": {
+      "PP": 23.0,
+      "PSOE": 29.7,
+      "VOX": 16.3,
+      "SUMAR": 7.5
+    },
+    "calculo_pp": {
+      "voto_directo": 16.4,
+      "recuerdo_bruto": 24.92,
+      "recuerdo_norm": 24.92,
+      "referencia_23j": 33.1,
+      "k_raw": 1.3284,
+      "k_amort": 1.1314,
+      "phi": 0.92,
+      "lambda": 1.02,
+      "base_calc": 17.07,
+      "final_calc": 17.41,
+      "aldabon_output": 23.0
+    }
+  },
+  "3528_multi_A.xlsx": {
+    "voto_directo": {
+      "PP": 13.1,
+      "PSOE": 25.9,
+      "VOX": 12.6,
+      "SUMAR": 5.5
+    },
+    "recuerdo": {
+      "PP": 21.43954616554221,
+      "PSOE": 43.68055427975946,
+      "VOX": 10.230960330381171,
+      "SUMAR": 13.380667856479942
+    },
+    "estimacion_cis": {
+      "PP": 19.8,
+      "PSOE": 34.8,
+      "VOX": 17.7,
+      "SUMAR": 7.7
+    },
+    "aldabon_gemini": {
+      "PP": 19.6,
+      "PSOE": 32.4,
+      "VOX": 15.8,
+      "SUMAR": 7.3
+    },
+    "calculo_pp": {
+      "voto_directo": 13.1,
+      "recuerdo_bruto": 21.44,
+      "recuerdo_norm": 21.44,
+      "referencia_23j": 33.1,
+      "k_raw": 1.5439,
+      "k_amort": 1.2176,
+      "phi": 0.92,
+      "lambda": 1.02,
+      "base_calc": 14.67,
+      "final_calc": 14.97,
+      "aldabon_output": 19.6
+    }
+  },
+  "3530_multi_A.xlsx": {
+    "voto_directo": {
+      "PP": 15.2,
+      "PSOE": 23.3,
+      "VOX": 13.6,
+      "SUMAR": 4.9
+    },
+    "recuerdo": {
+      "PP": 25.152380854337014,
+      "PSOE": 39.558546711185635,
+      "VOX": 9.823226984154887,
+      "SUMAR": 13.162036298472914
+    },
+    "estimacion_cis": {
+      "PP": 22.4,
+      "PSOE": 32.6,
+      "VOX": 18.8,
+      "SUMAR": 7.1
+    },
+    "aldabon_gemini": {
+      "PP": 21.7,
+      "PSOE": 30.0,
+      "VOX": 17.6,
+      "SUMAR": 6.7
+    },
+    "calculo_pp": {
+      "voto_directo": 15.2,
+      "recuerdo_bruto": 25.15,
+      "recuerdo_norm": 25.15,
+      "referencia_23j": 33.1,
+      "k_raw": 1.316,
+      "k_amort": 1.1264,
+      "phi": 0.92,
+      "lambda": 1.02,
+      "base_calc": 15.75,
+      "final_calc": 16.07,
+      "aldabon_output": 21.7
+    }
+  },
+  "3536-multi.xlsx": {
+    "voto_directo": {
+      "PP": 15.163251507946677,
+      "PSOE": 23.309158287729712,
+      "VOX": 12.418872202819765,
+      "SUMAR": 5.517221226818945
+    },
+    "recuerdo": {
+      "PP": 24.243156912604437,
+      "PSOE": 39.4413073843247,
+      "VOX": 10.472494135910921,
+      "SUMAR": 14.452151276801434
+    },
+    "estimacion_cis": {
+      "PP": 22.4,
+      "PSOE": 31.4,
+      "VOX": 17.6,
+      "SUMAR": "N/A"
+    },
+    "aldabon_gemini": {
+      "PP": 21.6,
+      "PSOE": 29.6,
+      "VOX": 15.8,
+      "SUMAR": 7.4
+    },
+    "calculo_pp": {
+      "voto_directo": 15.16,
+      "recuerdo_bruto": 24.24,
+      "recuerdo_norm": 24.24,
+      "referencia_23j": 33.1,
+      "k_raw": 1.3653,
+      "k_amort": 1.1461,
+      "phi": 0.92,
+      "lambda": 1.02,
+      "base_calc": 15.99,
+      "final_calc": 16.31,
+      "aldabon_output": 21.6
+    }
+  }
+}
