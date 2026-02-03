@@ -855,9 +855,13 @@ class EstudioCIS(ABC):
                 else:
                     k = 1.0
 
-            phi = fidelidad_map.get(p, 1.0)     # Φ_p
+            # APLICAR CORRECCION A FIDELIDAD:
+            # Asumimos que el sesgo de ocultación (K) afecta igual al recuerdo que a la fidelidad.
+            # Si K > 1 (voto oculto), la fidelidad real es mayor que la declarada.
+            phi_base = fidelidad_map.get(p, 1.0)
+            phi = min(1.0, phi_base * k)  # Corregir y limitar a 1.0
             
-            # Fórmula base SIN momentum: base = S_p × K_p × Φ_p
+            # Fórmula base SIN momentum: base = S_p × K_p × Φ_corregido
             base_val = vd * k * phi
             
             # PROTECCIÓN SUELO: La estimación NUNCA puede ser menor que el VD declarado
@@ -1045,9 +1049,9 @@ class AvanceAutonomicas(EstudioCIS):
             # Datos de fidelidad basados en matriz de transferencia real
             # Fuente: CIS Preelectoral Aragón Febrero 2026
             config['fidelidad'] = {
-                'PP': 0.78 * 1.20,       # 78% declarado x 1.2 corrección ocultación = ~94%
+                'PP': 0.78,              # 78% retención (dato real)
                 'PSOE': 0.59,            # 59% retención (dato real)
-                'VOX': 0.82 * 1.10,      # 82% declarado x 1.1 corrección = ~90%
+                'VOX': 0.82,             # 82% retención (dato real)
                 'CHA': 0.55,             # 55% retención (dato real)
                 'TERUEL EXISTE': 0.56,   # 56% retención (dato real) - "Aragón Existe"
                 'PODEMOS': 0.45,         # 45% retención (dato real)
