@@ -1045,9 +1045,9 @@ class AvanceAutonomicas(EstudioCIS):
             # Datos de fidelidad basados en matriz de transferencia real
             # Fuente: CIS Preelectoral Aragón Febrero 2026
             config['fidelidad'] = {
-                'PP': 0.78,              # 78% retención (dato real)
+                'PP': 0.78 * 1.20,       # 78% declarado x 1.2 corrección ocultación = ~94%
                 'PSOE': 0.59,            # 59% retención (dato real)
-                'VOX': 0.82,             # 82% retención (dato real)
+                'VOX': 0.82 * 1.10,      # 82% declarado x 1.1 corrección = ~90%
                 'CHA': 0.55,             # 55% retención (dato real)
                 'TERUEL EXISTE': 0.56,   # 56% retención (dato real) - "Aragón Existe"
                 'PODEMOS': 0.45,         # 45% retención (dato real)
