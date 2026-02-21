@@ -137,38 +137,40 @@ if file_path and os.path.exists(file_path):
             st.subheader("🎚️ Ajuste de Momentum (Λ)")
             st.caption("Modifica el factor de coyuntura para cada partido. Valores < 1.0 = Desgaste | > 1.0 = Impulso")
             
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                lam_psoe = st.number_input(
-                    "PSOE", min_value=0.50, max_value=1.50, 
-                    value=default_momentum.get('PSOE', 1.0), step=0.01, format="%.2f",
-                    key="lam_psoe"
-                )
-            with col2:
-                lam_pp = st.number_input(
-                    "PP", min_value=0.50, max_value=1.50,
-                    value=default_momentum.get('PP', 1.0), step=0.01, format="%.2f",
-                    key="lam_pp"
-                )
-            with col3:
-                lam_vox = st.number_input(
-                    "VOX", min_value=0.50, max_value=1.50,
-                    value=default_momentum.get('VOX', 1.0), step=0.01, format="%.2f",
-                    key="lam_vox"
-                )
-            with col4:
-                lam_salf = st.number_input(
-                    "SALF", min_value=0.50, max_value=1.50,
-                    value=default_momentum.get('SALF', 1.0), step=0.01, format="%.2f",
-                    key="lam_salf"
-                )
+            # Determinar los 6 primeros partidos por voto directo (dinámico)
+            top_momentum_parties = main_parties[:6]
+            
+            # Crear sliders dinámicamente (2 filas de 3 columnas)
+            momentum_values = {}
+            row1_parties = top_momentum_parties[:3]
+            row2_parties = top_momentum_parties[3:6]
+            
+            cols_row1 = st.columns(len(row1_parties)) if row1_parties else []
+            for i, party in enumerate(row1_parties):
+                with cols_row1[i]:
+                    momentum_values[party] = st.number_input(
+                        party, min_value=0.50, max_value=1.50,
+                        value=default_momentum.get(party, 1.0), step=0.01, format="%.2f",
+                        key=f"lam_{party}"
+                    )
+            
+            if row2_parties:
+                cols_row2 = st.columns(len(row2_parties))
+                for i, party in enumerate(row2_parties):
+                    with cols_row2[i]:
+                        momentum_values[party] = st.number_input(
+                            party, min_value=0.50, max_value=1.50,
+                            value=default_momentum.get(party, 1.0), step=0.01, format="%.2f",
+                            key=f"lam_{party}"
+                        )
             
             # Calcular Aldabón-Gemini con momentum ajustado
-            custom_momentum = {'PSOE': lam_psoe, 'PP': lam_pp, 'VOX': lam_vox, 'SALF': lam_salf}
+            custom_momentum = momentum_values
             aldabon_gemini = estudio.calcular_aldabon_gemini(custom_momentum=custom_momentum)
             
             # Mostrar valores de momentum aplicados
-            st.info(f"**Λ aplicados:** PSOE={lam_psoe:.2f} | PP={lam_pp:.2f} | VOX={lam_vox:.2f} | SALF={lam_salf:.2f}")
+            lam_display = " | ".join([f"{p}={v:.2f}" for p, v in momentum_values.items()])
+            st.info(f"**Λ aplicados:** {lam_display}")
             
             st.markdown("---")
             

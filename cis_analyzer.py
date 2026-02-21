@@ -109,6 +109,13 @@ def get_baseline_results(ambito, region=None):
             'PP': 35.5, 'PSOE': 29.5, 'VOX': 11.3, 'CHA': 5.1,
             'TERUEL EXISTE': 5.0, 'SUMAR': 4.2, 'PAR': 2.1, 'PODEMOS': 4.0
         }
+    # Autonómicas Castilla y León 2022
+    if region and 'CASTILLA' in region and ambito == "AUTONÓMICO":
+        return {
+            'PP': 38.3, 'PSOE': 28.5, 'VOX': 7.9, 'UPL': 4.4,
+            'PODEMOS': 5.3, 'SUMAR': 2.7, 'Soria Ya': 1.5,
+            'Por Ávila': 1.2
+        }
     return {}
 
 def find_rv_sheet(xl):
@@ -130,7 +137,11 @@ def find_rv_sheet(xl):
     return None
 
 def normalize_name(val):
-    """Normalización de élite: robusta a ruido, mayúsculas y sufijos."""
+    """Normalización de élite: robusta a ruido, mayúsculas y sufijos.
+    
+    FALLBACK: Si no hay match en el mapeo y no es categoría excluida,
+    devuelve el nombre capitalizado para capturar partidos regionales.
+    """
     if pd.isna(val): return ""
     p = str(val).replace('*','').upper().strip()
     
@@ -152,17 +163,22 @@ def normalize_name(val):
         "PACMA": ["PACMA"],
         "CHA": ["CHA", "ARAGONESISTA"],
         "TERUEL EXISTE": ["EXISTE", "TERUEL"],
-        "PAR": ["PAR", "ARAGONÉS"]
+        "PAR": ["PAR", "ARAGONÉS"],
+        "UPL": ["UPL", "PUEBLO LEONÉS"],
     }
     
     for key, tokens in mappings.items():
         if any(token in p for token in tokens): return key
         
     # Filtros de exclusión
-    exclude = ['TOTAL', 'SABE', 'CONTESTA', 'BLANCO', 'NULO', 'OTROS', 'MARGEN', 'INTERVALO', 'ESCAÑO', 'RESIDENTE']
+    exclude = ['TOTAL', 'SABE', 'CONTESTA', 'BLANCO', 'NULO', 'OTROS', 'MARGEN', 
+               'INTERVALO', 'ESCAÑO', 'RESIDENTE', 'ABSTENCI', 'ESTIMACI',
+               'DIRECTO', 'VÁLIDO', 'ERROR', 'CONFIANZA', 'CENSO', 'FUENTE',
+               'CUADRO', 'CONSECUENCIA', 'REDONDEO', 'NO VOTAR', 'N.S.', 'N.C.']
     if any(x in p for x in exclude) or len(p) < 2: return ""
     
-    return p.split()[0]
+    # FALLBACK: devolver nombre capitalizado para partidos regionales desconocidos
+    return p.strip().title()
 
 def analyze_cis_professional(file_path, study_type=None):
     print(f"--- ANALISIS PROFESIONAL: {os.path.basename(file_path)} ---", flush=True)

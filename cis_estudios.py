@@ -149,8 +149,8 @@ class EstudioCIS(ABC):
                 if '(N)' in cell_val:
                     row = df.iloc[i]
                     total = self._try_float(row.iloc[1])
-                    if total > 500:
-                        rural = self._try_float(row.iloc[2]) + self._try_float(row.iloc[3])
+                    if total and total > 500:
+                        rural = (self._try_float(row.iloc[2]) or 0.0) + (self._try_float(row.iloc[3]) or 0.0)
                         return rural / total if total > 0 else 0.3
         except: pass
         return 0.3
@@ -169,9 +169,9 @@ class EstudioCIS(ABC):
                         if '(N)' in str(df.iloc[k, 0]):
                             n_row = df.iloc[k]
                             total = self._try_float(n_row.iloc[1])
-                            if total > 500:
+                            if total and total > 500:
                                 # Extremos: 1-2 (cols 2,3) y 9-10 (cols 10,11)
-                                extremos = sum(self._try_float(n_row.iloc[c]) for c in [2, 3, 10, 11])
+                                extremos = sum((self._try_float(n_row.iloc[c]) or 0.0) for c in [2, 3, 10, 11])
                                 return extremos / total if total > 0 else 0.5
         except: pass
         return 0.5
@@ -195,7 +195,7 @@ class EstudioCIS(ABC):
                         continue
                     p_key = self._normalizar_partido(df.iloc[i, 0])
                     val = self._try_float(df.iloc[i, 1])
-                    if p_key and val > 0:
+                    if p_key and val and val > 0:
                         transvases[p_key] = val / 100.0
             return {'GLOBAL': transvases} if transvases else {}
         except: pass
@@ -212,15 +212,16 @@ class EstudioCIS(ABC):
     def _try_float(self, val) -> float:
         """Conversión robusta a float para formatos de texto CIS."""
         try:
-            if pd.isna(val) or val == 'nan' or val == '': return 0.0
+            if pd.isna(val) or str(val).strip().lower() in ['nan', '', 'n.c.', 'n.s.']: 
+                return None
             if isinstance(val, (int, float)): return float(val)
             s = str(val).strip()
             # Manejo de formatos España: 3.312,99 -> 3312.99
             if '.' in s and ',' in s: s = s.replace('.', '').replace(',', '.')
             elif ',' in s: s = s.replace(',', '.')
             s = re.sub(r'[^0-9.]', '', s)
-            return float(s) if s else 0.0
-        except: return 0.0
+            return float(s) if s else None
+        except: return None
 
     def _fuzzy_normalize(self, text: str) -> str:
         """Normaliza texto eliminando acentos, caracteres raros y espacios."""
@@ -614,18 +615,6 @@ class EstudioCIS(ABC):
 
 
     
-    def _fuzzy_normalize(self, text: str) -> str:
-        """Normaliza texto eliminando acentos, caracteres raros y espacios."""
-        if not text: return ""
-        t = text.upper()
-        # Eliminar caracteres raros de codificación (común en Excel del CIS)
-        t = re.sub(r'[Ë¾Ý═]', 'O', t) # ¾ y Ë suelen ser Ó, Ý es Í, etc.
-        # Eliminar acentos estándar
-        t = t.replace('Á', 'A').replace('É', 'E').replace('Í', 'I').replace('Ó', 'O').replace('Ú', 'U').replace('Ñ', 'N')
-        # Eliminar todo lo que no sea A-Z
-        t = re.sub(r'[^A-Z]', '', t)
-        return t
-
     def _encontrar_hoja_estimacion(self) -> str:
         """Encuentra la hoja de Estimación usando lógica difusa para evitar fallos de codificación."""
         sheets = self.sheet_names
@@ -662,11 +651,15 @@ class EstudioCIS(ABC):
         return None
     
     def _normalizar_partido(self, nombre: str) -> str:
-        """Normaliza el nombre de un partido para usarlo como clave."""
+        """Normaliza el nombre de un partido para usarlo como clave.
+        
+        FALLBACK INTELIGENTE: Si el nombre no está en el mapeo conocido
+        y no es una categoría de exclusión, devuelve el nombre limpio.
+        Esto permite capturar partidos regionales automáticamente.
+        """
         if not nombre or not isinstance(nombre, str):
             return ""
         
-        nombre_orig = nombre
         nombre = nombre.upper().strip()
         
         # Eliminar prefijos comunes en Barómetros como números de código
@@ -691,6 +684,7 @@ class EstudioCIS(ABC):
             'PAR': 'PAR', 'PARTIDO ARAGONÉS': 'PAR',
             'TERUEL EXISTE': 'TERUEL EXISTE',
             'UPN': 'UPN', 'UNIÓN DEL PUEBLO NAVARRO': 'UPN',
+            'UPL': 'UPL', 'UNIÓN DEL PUEBLO LEONÉS': 'UPL',
             'CCA': 'CCA', 'COALICIÓN CANARIA': 'CCA',
             'PACMA': 'PACMA',
             'CUP': 'CUP',
@@ -717,25 +711,17 @@ class EstudioCIS(ABC):
                re.search(rf'\b{re.escape(variante)}\b', nombre_clean):
                 return canonico
         
-        return ""
+        # FALLBACK: Si no es categoría de exclusión, devolver nombre limpio
+        # Esto captura partidos regionales como "Por Ávila", "Soria Ya", etc.
+        exclusiones = ['SABE', 'CONTESTA', 'ABSTENCI', 'NO VOTAR', 'N.S.', 'N.C.',
+                       'MARGEN', 'INTERVALO', 'ESCAÑO', 'ESTIMACI', 'CUADRO',
+                       'FUENTE', 'TOTAL', 'CENSO', 'RESIDENTE', 'DIRECTO',
+                       'VÁLIDO', 'ERROR', 'CONFIANZA', 'CONSECUENCIA', 'REDONDEO']
+        if any(ex in nombre for ex in exclusiones) or len(nombre) < 2:
+            return ""
         
-        return ""
-    
-    def _get_partidos_extra(self) -> list:
-        """Partidos adicionales a buscar que no están en referencia."""
-        return ['OTROS', 'EN BLANCO', 'NULO']
-    
-    def _try_float(self, val) -> float:
-        """Intenta convertir un valor a float."""
-        try:
-            if isinstance(val, str):
-                val = val.replace('%', '').replace(',', '.').strip()
-                if '±' in val or '–' in val or '-' in val:
-                    return None
-            v = float(val)
-            return v if not pd.isna(v) else None
-        except:
-            return None
+        # Devolver nombre capitalizado (título) como nueva clave
+        return nombre.strip().title()
     
     def extraer_recuerdo_voto(self) -> dict:
         """Extrae los datos de Recuerdo de Voto de la hoja RV correspondiente."""
@@ -797,15 +783,6 @@ class EstudioCIS(ABC):
         Calcula la estimación usando el método Aldabón-Gemini 3.0.
         
         Fórmula: E_p = S_p × K_p × Φ_p × Λ_p
-        Donde:
-            S_p = Voto Directo (intención declarada + simpatía)
-            K_p = Factor de corrección por recuerdo de voto
-            Φ_p = Fidelidad estructural (tasa de retención histórica)
-            Λ_p = Momentum (factor de coyuntura: desgaste/viralidad)
-        
-        Args:
-            custom_momentum: Dict opcional con valores Λ personalizados por partido.
-                            Si se proporciona, sobrescribe los valores por defecto.
         """
         voto_directo = self.extraer_voto_directo()
         recuerdo = self.extraer_recuerdo_voto()
@@ -822,7 +799,6 @@ class EstudioCIS(ABC):
             if rec > 0 and sum_rec > 0:
                 rec_norm = (rec / sum_rec) * 100  # R_norm,p
                 k_raw = voto_real / rec_norm      # K_p crudo
-                # Factor K SIN amortiguación (aplicar 100%)
                 k_factors[p] = k_raw
             else:
                 k_factors[p] = 1.0
@@ -831,7 +807,6 @@ class EstudioCIS(ABC):
         config = self.get_context_biases()
         fidelidad_map = config['fidelidad']    # Φ
         
-        # Usar momentum personalizado si se proporciona, sino usar el por defecto
         momentum_map = config['momentum'].copy()  # Λ base
         if custom_momentum:
             momentum_map.update(custom_momentum)
@@ -855,24 +830,16 @@ class EstudioCIS(ABC):
                 else:
                     k = 1.0
 
-            # APLICAR CORRECCION A FIDELIDAD:
-            # Asumimos que el sesgo de ocultación (K) afecta igual al recuerdo que a la fidelidad.
-            # Si K > 1 (voto oculto), la fidelidad real es mayor que la declarada.
             phi_base = fidelidad_map.get(p, 1.0)
-            phi = min(1.0, phi_base * k)  # Corregir y limitar a 1.0
+            phi = min(1.0, phi_base * k)
             
-            # Fórmula base SIN momentum: base = S_p × K_p × Φ_corregido
             base_val = vd * k * phi
-            
-            # PROTECCIÓN SUELO: La estimación NUNCA puede ser menor que el VD declarado
-            # Criterio metodológico: el modelo suma, nunca resta respecto a lo declarado
             estimacion_raw[p] = max(vd, base_val)
             
-            # Masa perdida para redistribución (transvases de fidelidad)
             if base_val < vd * k:
                 masa_perdida[p] = (vd * k) - base_val
         
-        # C. Aplicar Transvases de fidelidad (voto refugio ideológico)
+        # C. Aplicar Transvases
         for origen, masa in masa_perdida.items():
             if masa > 0 and origen in transvases_map:
                 destinos = transvases_map[origen]
@@ -882,55 +849,33 @@ class EstudioCIS(ABC):
                         estimacion_raw[destino] = estimacion_raw.get(destino, 0.0) + refugio_val
         
         # D. Aplicar Momentum (Λ) con MATRIZ DE TRANSFERENCIA
-        # Cuando Λ < 1: los votos perdidos van a destinos específicos
-        # Cuando Λ > 1: los votos ganados vienen de Abstención
-        
-        # Matriz de transferencia a partidos del mismo sector (sin abstención)
-        # La abstención se calcula dinámicamente según nivel de desmovilización
         MATRIZ_SECTOR = {
-            'PSOE': {'SUMAR': 0.67, 'PODEMOS': 0.33},  # Izquierda
-            'PP': {'VOX': 0.70, 'En Blanco': 0.30},    # Derecha
-            'VOX': {'PP': 0.85, 'En Blanco': 0.15},    # Derecha
-            'SALF': {'VOX': 0.60, 'En Blanco': 0.40},  # Ultraderecha
-            'SUMAR': {'PSOE': 0.67, 'PODEMOS': 0.33},  # Izquierda
-            'PODEMOS': {'SUMAR': 0.57, 'PSOE': 0.43},  # Izquierda
+            'PSOE': {'SUMAR': 0.67, 'PODEMOS': 0.33},
+            'PP': {'VOX': 0.70, 'En Blanco': 0.30},
+            'VOX': {'PP': 0.85, 'En Blanco': 0.15},
+            'SALF': {'VOX': 0.60, 'En Blanco': 0.40},
+            'SUMAR': {'PSOE': 0.67, 'PODEMOS': 0.33},
+            'PODEMOS': {'SUMAR': 0.57, 'PSOE': 0.43},
         }
         
         def calcular_porcentaje_abstencion(momentum: float) -> float:
-            """
-            Calcula el porcentaje que va a abstención según nivel de desmovilización.
-            - Λ >= 0.90: 40% abstención (desmovilización leve)
-            - Λ 0.80-0.90: 50% abstención (desmovilización moderada)
-            - Λ < 0.80: 60% abstención (desmovilización severa)
-            """
-            if momentum >= 0.90:
-                return 0.40
-            elif momentum >= 0.80:
-                return 0.50
-            else:
-                return 0.60
+            if momentum >= 0.90: return 0.40
+            elif momentum >= 0.80: return 0.50
+            else: return 0.60
         
-        # Calcular deltas de momentum
         deltas = {}
         for p, base in estimacion_raw.items():
             lam = momentum_map.get(p, 1.0)
-            delta = base * (lam - 1.0)  # Positivo si gana, negativo si pierde
-            deltas[p] = (delta, lam)  # Guardar también el lambda para calcular abstención
+            delta = base * (lam - 1.0)
+            deltas[p] = (delta, lam)
         
-        # Aplicar transferencias con abstención dinámica
         for p, (delta, lam) in deltas.items():
-            if delta < 0:  # Partido pierde votos
+            if delta < 0:
                 perdida = abs(delta)
                 estimacion_raw[p] -= perdida
-                
-                # Calcular abstención según nivel de desmovilización
                 pct_abstencion = calcular_porcentaje_abstencion(lam)
                 pct_sector = 1.0 - pct_abstencion
-                
-                # Enviar a abstención
                 estimacion_raw['Abstención'] = estimacion_raw.get('Abstención', 0) + perdida * pct_abstencion
-                
-                # Redistribuir resto a partidos del sector
                 if p in MATRIZ_SECTOR:
                     for destino, porcentaje in MATRIZ_SECTOR[p].items():
                         if destino in estimacion_raw:
@@ -938,17 +883,14 @@ class EstudioCIS(ABC):
                         elif destino == 'En Blanco':
                             estimacion_raw['En Blanco'] = estimacion_raw.get('En Blanco', 0) + perdida * pct_sector * porcentaje
                 else:
-                    # Si no está en la matriz, todo a abstención
-                    estimacion_raw['Abstención'] += perdida * pct_sector
-                    
-            elif delta > 0:  # Partido gana votos (movilización)
+                    estimacion_raw['Abstención'] = estimacion_raw.get('Abstención', 0) + perdida * pct_sector
+            elif delta > 0:
                 ganancia = delta
                 estimacion_raw[p] += ganancia
-                # Los votos vienen principalmente de Abstención
                 if 'Abstención' in estimacion_raw:
                     estimacion_raw['Abstención'] = max(0, estimacion_raw['Abstención'] - ganancia)
         
-        # E. Normalización final a 100%
+        # E. Normalización final
         estimacion = {}
         total = sum(estimacion_raw.values())
         if total > 0:
@@ -992,8 +934,14 @@ class AvanceAutonomicas(EstudioCIS):
             'En Blanco': 1.7, 'Voto Nulo': 1.1
         },
         'EXTREMADURA': {
-            'PP': 38.8, 'PSOE': 39.9, 'VOX': 8.1, 'PODEMOS': 6.0, # Volver a 2023 para calibración de 3538
+            'PP': 38.8, 'PSOE': 39.9, 'VOX': 8.1, 'PODEMOS': 6.0,
             'SUMAR': 1.0, 'En Blanco': 1.2, 'Voto Nulo': 1.3, 'OTROS': 3.7
+        },
+        'CASTILLA Y LEON': {
+            'PP': 38.3, 'PSOE': 28.5, 'VOX': 7.9, 'UPL': 4.4,
+            'PODEMOS': 5.3, 'SUMAR': 2.7, 'Soria Ya': 1.5,
+            'Por Ávila': 1.2, 'SALF': 0.0,
+            'En Blanco': 1.5, 'Voto Nulo': 0.8
         }
     }
     
@@ -1005,36 +953,54 @@ class AvanceAutonomicas(EstudioCIS):
         return self.VOTO_REAL_AUTONOMICAS.get(self.comunidad, {})
     
     def get_hoja_rv(self) -> str:
+        # Detectar hoja RV correcta según comunidad
+        if self.comunidad == 'CASTILLA Y LEON':
+            # CyL usa RV EA22 (Autonómicas 2022)
+            if 'RV EA22' in self.sheet_names:
+                return 'RV EA22'
+        if 'RV EA23' in self.sheet_names:
+            return 'RV EA23'
+        # Fallback: buscar cualquier RV EA
+        for s in self.sheet_names:
+            if s.startswith('RV EA'):
+                return s
         return 'RV EA23'
     
     def _normalizar_partido(self, nombre: str) -> str:
         """Normaliza partidos con variantes autonómicas."""
-        # 1. Intentar normalización base
-        norm = super()._normalizar_partido(nombre)
-        if norm: return norm
-        
-        # 2. Si no normalizó, aplicar lógica regional específica
         nombre_up = str(nombre).upper().strip()
+        nombre_clean = nombre_up.replace('.', '')
         
+        # 1. Aplicar lógica regional específica PRIMERO
+        mapeo_reg = {}
         if self.comunidad == 'ARAGON':
-            mapeo_aragon = {
+            mapeo_reg = {
                 'PODEMOS-AV': 'PODEMOS', 'PODEMOS ARAGÓN': 'PODEMOS',
                 'IU-MOVIMIENTO SUMAR': 'SUMAR', 'IU-ARAGÓN': 'SUMAR',
                 'CHUNTA': 'CHA', 'PAR': 'PAR', 'TERUEL EXISTE': 'TERUEL EXISTE'
             }
-            for v, c in mapeo_aragon.items():
-                if v in nombre_up: return c
-                
         elif self.comunidad == 'EXTREMADURA':
-            mapeo_ext = {
+            mapeo_reg = {
                 'PODEMOS-IU-AV': 'PODEMOS', 'UNIDAS POR EXTREMADURA': 'PODEMOS',
                 'JUNTOS LEVANTA': 'JUNTOS-LEVANTA', 'LEVANTA': 'JUNTOS-LEVANTA',
                 'NEX': 'OTROS', 'EXTREMADURA UNIDA': 'EXTREMADURA UNIDA'
             }
-            for v, c in mapeo_ext.items():
-                if v in nombre_up: return c
+        elif self.comunidad == 'CASTILLA Y LEON':
+            mapeo_reg = {
+                'UPL': 'UPL', 'UNIÓN DEL PUEBLO LEONÉS': 'UPL',
+                'IU-MOVIMIENTO SUMAR-VQ': 'SUMAR', 'IU-MOVIMIENTO SUMAR': 'SUMAR',
+                'PODEMOS-AV': 'PODEMOS', 'PODEMOS-IU': 'PODEMOS',
+                'POR ÁVILA': 'Por Ávila', 'POR AVILA': 'Por Ávila',
+                'SORIA YA': 'Soria Ya', 'SORIA ¡YA!': 'Soria Ya',
+            }
+            
+        for v, c in mapeo_reg.items():
+            if re.search(rf'\b{re.escape(v)}\b', nombre_up) or \
+               re.search(rf'\b{re.escape(v)}\b', nombre_clean):
+                return c
         
-        return norm # Retornará "" si nada funcionó
+        # 2. Intentar normalización base si no hubo match regional
+        return super()._normalizar_partido(nombre)
 
     def get_context_biases(self) -> dict:
         """
@@ -1105,7 +1071,9 @@ def crear_estudio(file_path: str) -> EstudioCIS:
     tiene_estimacion = any('estimaci' in s.lower() for s in sheets)
     
     # Detección robusta de autonómicas (por nombre de hoja de resultados)
-    comunidades = ['EXTREMADURA', 'ARAGÓN', 'ARAGON', 'MADRID', 'VALENCIA', 'CATALUNYA', 'PAÍS VASCO', 'GALICIA']
+    comunidades = ['EXTREMADURA', 'ARAGÓN', 'ARAGON', 'CASTILLA Y LEÓN', 'CASTILLA Y LEON',
+                   'MADRID', 'VALENCIA', 'CATALUNYA', 'PAÍS VASCO', 'GALICIA',
+                   'ANDALUCÍA', 'ANDALUCIA', 'CANARIAS', 'MURCIA', 'NAVARRA']
     es_autonomico = tiene_rv_ea or any('RESULTADOS' in s.upper() and any(c in s.upper() for c in comunidades) for s in sheets)
     
     # Buscar PDF asociado
@@ -1118,29 +1086,48 @@ def crear_estudio(file_path: str) -> EstudioCIS:
     
     # Determinar tipo
     if es_autonomico:
-        # Detectar comunidad autónoma analizando la Ficha técnica o el nombre del archivo
-        comunidad = 'ARAGON'
+        # Detectar comunidad autónoma analizando la Ficha técnica
+        comunidad = None
         try:
-            # Primero intentar por nombre de hoja
-            for s in sheets:
-                s_up = s.upper()
-                if 'RESULTADOS' in s_up:
-                    for c in comunidades:
-                        if c in s_up:
-                            comunidad = c
-                            if comunidad == 'ARAGÓN': comunidad = 'ARAGON'
-                            break
-            
-            # Si no, buscar en ficha técnica
-            if comunidad == 'ARAGON' and 'Ficha técnica' in sheets:
-                ficha_df = pd.read_excel(file_path, sheet_name='Ficha técnica', header=None)
+            # Buscar en ficha técnica (fuente más fiable)
+            ficha_sheet = next((s for s in sheets if 'ficha' in s.lower()), None)
+            if ficha_sheet:
+                ficha_df = pd.read_excel(file_path, sheet_name=ficha_sheet, header=None)
                 ficha_text = ficha_df.to_string().upper()
-                if 'EXTREMADURA' in ficha_text:
-                    comunidad = 'EXTREMADURA'
-                elif 'ARAGÓN' in ficha_text or 'ARAGON' in ficha_text:
-                    comunidad = 'ARAGON'
+                # Mapeo normalizado de comunidades
+                com_map = {
+                    'CASTILLA Y LE': 'CASTILLA Y LEON',
+                    'EXTREMADURA': 'EXTREMADURA',
+                    'ARAG': 'ARAGON',
+                    'ANDALUC': 'ANDALUCIA',
+                    'MADRID': 'MADRID',
+                    'VALENCI': 'VALENCIA',
+                    'CATALUN': 'CATALUNYA',
+                    'PAÍS VASCO': 'PAIS VASCO', 'PAIS VASCO': 'PAIS VASCO',
+                    'GALICIA': 'GALICIA',
+                    'CANARIAS': 'CANARIAS',
+                    'MURCIA': 'MURCIA',
+                    'NAVARRA': 'NAVARRA',
+                }
+                for keyword, com_name in com_map.items():
+                    if keyword in ficha_text:
+                        comunidad = com_name
+                        break
+            
+            # Fallback: buscar por nombre de hoja de resultados
+            if not comunidad:
+                for s in sheets:
+                    s_up = s.upper()
+                    if 'RESULTADOS' in s_up:
+                        for c in comunidades:
+                            if c in s_up:
+                                comunidad = c.replace('Ó', 'O').replace('Á', 'A').replace('É', 'E').replace('Í', 'I').replace('Ú', 'U')
+                                break
         except:
             pass
+        
+        if not comunidad:
+            comunidad = 'ARAGON'  # Default si no se detecta
         return AvanceAutonomicas(file_path, comunidad)
     elif tiene_pdf or (not tiene_estimacion and tiene_rv_eg):
         return BarometroNacional(file_path)

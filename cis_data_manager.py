@@ -6,6 +6,7 @@ import pandas as pd
 # Source: CIS Barometer Search (2024-2025)
 # Mapping of Month-Year to Study ID (Strictly these 5)
 STUDY_MAP = {
+    "Castilla y León (Feb 2026)": "3545",
     "Febrero 2026": "3543",
     "Enero 2026": "3540",
     "Extremadura (Dic 2025)": "3538",
